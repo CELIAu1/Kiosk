@@ -1,4 +1,4 @@
-import { all, one, run } from "../db";
+import { all, one, run, type Tx } from "../db";
 import { newId } from "../ids";
 import type { InterestKind } from "../types";
 
@@ -7,7 +7,7 @@ import type { InterestKind } from "../types";
  * a look, a question, an abandoned cart — is written here so the owner can
  * see it instead of losing it inside a DM thread.
  */
-export function recordInterest(
+export async function recordInterest(
   businessId: string,
   kind: InterestKind,
   ref: {
@@ -16,8 +16,15 @@ export function recordInterest(
     visitorId?: string | null;
     customerId?: string | null;
   } = {},
+  /**
+   * Pass the caller's transaction when recording from inside one. Using the
+   * global writer there would queue behind the very transaction waiting on
+   * this call, and deadlock.
+   */
+  t?: Tx,
 ) {
-  run(
+  const write = t ? t.run.bind(t) : run;
+  await write(
     `INSERT INTO interest_events
        (id, business_id, shop_id, product_id, visitor_id, customer_id, kind, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -36,14 +43,14 @@ export function recordInterest(
  * A view only counts once per visitor per product per 6 hours. Otherwise a
  * refresh would inflate the number the owner is trying to make decisions from.
  */
-export function recordProductView(
+export async function recordProductView(
   businessId: string,
   shopId: string,
   productId: string,
   visitorId: string,
 ) {
   const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-  const seen = one<{ id: string }>(
+  const seen = await one<{ id: string }>(
     `SELECT id FROM interest_events
       WHERE product_id = ? AND visitor_id = ? AND kind = 'viewed_product' AND created_at > ?
       LIMIT 1`,
@@ -57,16 +64,16 @@ export function recordProductView(
 }
 
 /** Shop views over a window — the "Overall shop views" stat. */
-export function shopViews(shopId: string, days = 7): number {
+export async function shopViews(shopId: string, days = 7): Promise<number> {
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
   return (
-    one<{ n: number }>(
+    (await one<{ n: number }>(
       `SELECT COUNT(DISTINCT COALESCE(visitor_id, customer_id)) AS n
          FROM interest_events
         WHERE shop_id = ? AND kind = 'viewed_shop' AND created_at > ?`,
       shopId,
       since,
-    )?.n ?? 0
+    ))?.n ?? 0
   );
 }
 
@@ -79,9 +86,9 @@ export type Pulse = {
 };
 
 /** The "what happened" numbers. Counts of people, not of page hits. */
-export function getPulse(businessId: string, days = 7): Pulse {
+export async function getPulse(businessId: string, days = 7): Promise<Pulse> {
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
-  const row = one<Pulse>(
+  const row = await one<Pulse>(
     `SELECT
        (SELECT COUNT(DISTINCT COALESCE(visitor_id, customer_id))
           FROM interest_events
@@ -117,11 +124,11 @@ export type WatchedProduct = {
  * useful thing the owner can learn: interest without a sale means something
  * is wrong — the price, the photo, or the availability.
  */
-export function productsWithUnconvertedInterest(
+export async function productsWithUnconvertedInterest(
   businessId: string,
   days = 14,
   minViews = 5,
-): WatchedProduct[] {
+): Promise<WatchedProduct[]> {
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
   return all<WatchedProduct>(
     `SELECT p.id, p.name, p.price_minor, p.status, p.stock,
@@ -145,7 +152,7 @@ export function productsWithUnconvertedInterest(
 }
 
 /** Best sellers over the window — what to restock and what to post about. */
-export function topSellingProducts(businessId: string, days = 30) {
+export async function topSellingProducts(businessId: string, days = 30) {
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
   return all<WatchedProduct & { sold: number; revenue_minor: number }>(
     `SELECT p.id, p.name, p.price_minor, p.status, p.stock,
@@ -178,7 +185,7 @@ export type ActivityRow = {
 };
 
 /** Recent activity, collapsed to the events worth a human's attention. */
-export function listActivity(businessId: string, limit = 20): ActivityRow[] {
+export async function listActivity(businessId: string, limit = 20): Promise<ActivityRow[]> {
   return all<ActivityRow>(
     `SELECT e.id, e.kind, e.created_at, e.product_id, e.customer_id,
             p.name AS product_name,
@@ -198,8 +205,8 @@ export function listActivity(businessId: string, limit = 20): ActivityRow[] {
 }
 
 /** The per-product funnel shown on the product page. */
-export function productFunnel(productId: string) {
-  const row = one<{ views: number; asked: number; carted: number; ordered: number }>(
+export async function productFunnel(productId: string) {
+  const row = await one<{ views: number; asked: number; carted: number; ordered: number }>(
     `SELECT
        COUNT(DISTINCT CASE WHEN kind = 'viewed_product'
                            THEN COALESCE(visitor_id, customer_id) END) AS views,
@@ -225,11 +232,11 @@ export type InterestSummary = {
  * The "Customer interest" list on Home: one row per person, saying what they
  * looked at. Reads as "Ada viewed 3 products — Black runners, Canvas tote…".
  */
-export function recentInterestSummaries(
+export async function recentInterestSummaries(
   businessId: string,
   limit = 6,
   days = 14,
-): InterestSummary[] {
+): Promise<InterestSummary[]> {
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
   return all<InterestSummary>(
     `SELECT COALESCE(e.customer_id, e.visitor_id) AS key,
@@ -260,11 +267,11 @@ export type AttentionTile = {
 };
 
 /** "Getting attention" — the products people are actually opening. */
-export function mostViewedProducts(
+export async function mostViewedProducts(
   businessId: string,
   limit = 6,
   days = 14,
-): AttentionTile[] {
+): Promise<AttentionTile[]> {
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
   return all<AttentionTile>(
     `SELECT p.id, p.name,

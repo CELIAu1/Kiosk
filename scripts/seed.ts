@@ -5,7 +5,7 @@
  *   npm run db:seed      (add to whatever is there)
  *   npm run db:reset     (start from an empty database)
  */
-import { all, one, run, tx } from "../src/lib/db.ts";
+import { all, one, tx } from "../src/lib/db.ts";
 import { newId, shortCode } from "../src/lib/ids.ts";
 import { hashPassword } from "../src/lib/password.ts";
 import { productPlaceholder, type RGB } from "./png.ts";
@@ -165,8 +165,8 @@ const QUESTIONS = [
   "Does it run true to size or should I go a size up?",
 ];
 
-function main() {
-  if (one<{ id: string }>(`SELECT id FROM users WHERE email = ?`, DEMO_EMAIL)) {
+async function main() {
+  if (await one<{ id: string }>(`SELECT id FROM users WHERE email = ?`, DEMO_EMAIL)) {
     console.log("Demo shop already exists. Run `npm run db:reset` to rebuild it.");
     return;
   }
@@ -174,8 +174,8 @@ function main() {
   const businessId = newId("biz");
   const createdAt = iso(40);
 
-  tx(() => {
-    run(
+  await tx(async (t) => {
+    await t.run(
       `INSERT INTO businesses
          (id, name, slug, tagline, owner_name, whatsapp, instagram, tiktok,
           location, currency, logo_image_id, handle, created_at)
@@ -195,7 +195,7 @@ function main() {
       createdAt,
     );
 
-    run(
+    await t.run(
       `INSERT INTO users (id, business_id, email, password_hash, name, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       newId("usr"),
@@ -207,10 +207,10 @@ function main() {
     );
 
     const shopIds = new Map<string, string>();
-    SHOPS.forEach((shop, index) => {
+    for (const [index, shop] of SHOPS.entries()) {
       const id = newId("shp");
       shopIds.set(shop.key, id);
-      run(
+      await t.run(
         `INSERT INTO shops
            (id, business_id, name, tag, slug, about, cover_image_id, position, created_at)
          VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
@@ -223,7 +223,7 @@ function main() {
         index,
         createdAt,
       );
-    });
+    }
 
     // Categories live inside a shop, so the same name in two shops is two rows.
     const categoryIds = new Map<string, string>();
@@ -233,7 +233,7 @@ function main() {
       if (categoryIds.has(key)) continue;
       const id = newId("cat");
       categoryIds.set(key, id);
-      run(
+      await t.run(
         `INSERT INTO categories (id, business_id, shop_id, name, position)
          VALUES (?, ?, ?, ?, ?)`,
         id,
@@ -245,10 +245,10 @@ function main() {
     }
 
     const productIds: { id: string; seed: SeedProduct }[] = [];
-    PRODUCTS.forEach((seed, index) => {
+    for (const [index, seed] of PRODUCTS.entries()) {
       const productId = newId("prd");
       const addedAt = iso(30 - index * 2);
-      run(
+      await t.run(
         `INSERT INTO products
            (id, business_id, shop_id, category_id, name, description, price_minor,
             compare_at_minor, status, stock, created_at, updated_at)
@@ -270,14 +270,14 @@ function main() {
       // Two angles per product, so the gallery has something to scroll.
       for (let angle = 0; angle < 2; angle++) {
         const imageId = newId("img");
-        run(
+        await t.run(
           `INSERT INTO images (id, mime, bytes, created_at) VALUES (?, ?, ?, ?)`,
           imageId,
           "image/png",
           productPlaceholder(index * 7 + angle * 3, seed.colour),
           addedAt,
         );
-        run(
+        await t.run(
           `INSERT INTO product_images (id, product_id, image_id, position) VALUES (?, ?, ?, ?)`,
           newId("pim"),
           productId,
@@ -286,8 +286,8 @@ function main() {
         );
       }
 
-      (seed.options ?? []).forEach((label, position) => {
-        run(
+      for (const [position, label] of (seed.options ?? []).entries()) {
+        await t.run(
           `INSERT INTO product_options (id, product_id, label, in_stock, position)
            VALUES (?, ?, ?, 1, ?)`,
           newId("opt"),
@@ -295,15 +295,16 @@ function main() {
           label,
           position,
         );
-      });
+      }
 
       productIds.push({ id: productId, seed });
-    });
+    }
 
-    const customerIds = CUSTOMERS.map((person) => {
+    const customerIds: string[] = [];
+    for (const person of CUSTOMERS) {
       const id = newId("cus");
       const firstSeen = iso(18 + Math.floor(random() * 10));
-      run(
+      await t.run(
         `INSERT INTO customers
            (id, business_id, name, phone, instagram, note, created_at, last_seen_at)
          VALUES (?, ?, ?, ?, ?, NULL, ?, ?)`,
@@ -315,14 +316,15 @@ function main() {
         firstSeen,
         iso(Math.floor(random() * 6)),
       );
-      return id;
-    });
+      customerIds.push(id);
+    }
 
     // Anonymous browsers: most people look without ever saying who they are.
-    const visitorIds = Array.from({ length: 34 }, () => {
+    const visitorIds: string[] = [];
+    for (let v = 0; v < 34; v++) {
       const id = newId("vis");
       const seen = iso(Math.floor(random() * 14));
-      run(
+      await t.run(
         `INSERT INTO visitors
            (id, business_id, device_token, customer_id, source, created_at, last_seen_at)
          VALUES (?, ?, ?, NULL, NULL, ?, ?)`,
@@ -332,10 +334,10 @@ function main() {
         seen,
         seen,
       );
-      return id;
-    });
+      visitorIds.push(id);
+    }
 
-    const interest = (
+    const interest = async (
       kind: string,
       at: string,
       ref: {
@@ -345,7 +347,7 @@ function main() {
         customerId?: string;
       },
     ) =>
-      run(
+      await t.run(
         `INSERT INTO interest_events
            (id, business_id, shop_id, product_id, visitor_id, customer_id, kind, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -362,7 +364,7 @@ function main() {
     // Shop visits.
     const allShopIds = [...shopIds.values()];
     for (const visitorId of visitorIds) {
-      interest("viewed_shop", iso(Math.floor(random() * 14)), {
+      await interest("viewed_shop", iso(Math.floor(random() * 14)), {
         visitorId,
         shopId: pick(allShopIds),
       });
@@ -373,7 +375,7 @@ function main() {
       if (seed.status === "hidden") continue;
       const lookers = Math.round(seed.heat * 26);
       for (let i = 0; i < lookers; i++) {
-        interest("viewed_product", iso(Math.floor(random() * 14)), {
+        await interest("viewed_product", iso(Math.floor(random() * 14)), {
           shopId: shopIds.get(seed.shop)!,
           productId: id,
           visitorId: pick(visitorIds),
@@ -389,7 +391,7 @@ function main() {
       const at = iso(Math.floor(random() * 8));
       // Two are still waiting, so the dashboard has something to chase.
       const answered = i >= 2;
-      run(
+      await t.run(
         `INSERT INTO questions
            (id, business_id, product_id, customer_id, body, status, created_at, answered_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -402,7 +404,7 @@ function main() {
         at,
         answered ? at : null,
       );
-      interest("asked", at, {
+      await interest("asked", at, {
         shopId: shopIds.get(product.seed.shop)!,
         productId: product.id,
         customerId,
@@ -415,7 +417,7 @@ function main() {
     );
     const statuses = ["new", "new", "confirmed", "completed", "completed", "cancelled"];
 
-    statuses.forEach((status, index) => {
+    for (const [index, status] of statuses.entries()) {
       const customerId = customerIds[index % customerIds.length];
       const at = iso(Math.floor(random() * 12));
       const orderId = newId("ord");
@@ -426,7 +428,7 @@ function main() {
       const unique = [...new Map(lines.map((line) => [line.id, line])).values()];
       const total = unique.reduce((sum, line) => sum + line.seed.price * 100, 0);
 
-      run(
+      await t.run(
         `INSERT INTO orders
            (id, business_id, shop_id, customer_id, reference, status, total_minor,
             note, created_at, updated_at)
@@ -444,11 +446,13 @@ function main() {
       );
 
       for (const line of unique) {
-        const option = all<{ label: string }>(
-          `SELECT label FROM product_options WHERE product_id = ? ORDER BY position LIMIT 1`,
-          line.id,
+        const option = (
+          await all<{ label: string }>(
+            `SELECT label FROM product_options WHERE product_id = ? ORDER BY position LIMIT 1`,
+            line.id,
+          )
         )[0];
-        run(
+        await t.run(
           `INSERT INTO order_items
              (id, order_id, product_id, name_at_time, option_label, unit_minor, qty)
            VALUES (?, ?, ?, ?, ?, ?, 1)`,
@@ -460,14 +464,14 @@ function main() {
           line.seed.price * 100,
         );
         if (status !== "cancelled") {
-          interest("ordered", at, {
+          await interest("ordered", at, {
             shopId: shopIds.get(line.seed.shop)!,
             productId: line.id,
             customerId,
           });
         }
       }
-    });
+    }
 
     // A couple of people who got as far as the basket and stopped.
     for (let i = 0; i < 3; i++) {
@@ -475,8 +479,8 @@ function main() {
       const at = iso(Math.floor(random() * 5));
       const visitorId = pick(visitorIds);
       const shopId = shopIds.get(product.seed.shop)!;
-      interest("added_to_cart", at, { shopId, productId: product.id, visitorId });
-      if (i < 2) interest("checkout_started", at, { shopId, visitorId });
+      await interest("added_to_cart", at, { shopId, productId: product.id, visitorId });
+      if (i < 2) await interest("checkout_started", at, { shopId, visitorId });
     }
   });
 
@@ -485,4 +489,4 @@ function main() {
   for (const shop of SHOPS) console.log(`  Shop          : /s/${shop.tag}  (${shop.name})`);
 }
 
-main();
+await main();

@@ -21,15 +21,15 @@ const SELECT = `
     LEFT JOIN products p ON p.id = q.product_id
 `;
 
-export function askQuestion(input: {
+export async function askQuestion(input: {
   businessId: string;
   productId: string | null;
   customerId: string;
   visitorId: string | null;
   body: string;
-}): string {
+}): Promise<string> {
   const id = newId("qst");
-  run(
+  await run(
     `INSERT INTO questions
        (id, business_id, product_id, customer_id, body, status, created_at)
      VALUES (?, ?, ?, ?, ?, 'waiting', ?)`,
@@ -48,10 +48,10 @@ export function askQuestion(input: {
   return id;
 }
 
-export function listQuestions(
+export async function listQuestions(
   businessId: string,
   status?: "waiting" | "answered",
-): QuestionRow[] {
+): Promise<QuestionRow[]> {
   const clause = status ? ` AND q.status = ?` : "";
   const params: string[] = status ? [businessId, status] : [businessId];
   return all<QuestionRow>(
@@ -60,24 +60,24 @@ export function listQuestions(
   );
 }
 
-export function countWaitingQuestions(businessId: string): number {
+export async function countWaitingQuestions(businessId: string): Promise<number> {
   return (
-    one<{ n: number }>(
+    (await one<{ n: number }>(
       `SELECT COUNT(*) AS n FROM questions WHERE business_id = ? AND status = 'waiting'`,
       businessId,
-    )?.n ?? 0
+    ))?.n ?? 0
   );
 }
 
-export function listProductQuestions(productId: string): QuestionRow[] {
+export async function listProductQuestions(productId: string): Promise<QuestionRow[]> {
   return all<QuestionRow>(
     `${SELECT} WHERE q.product_id = ? ORDER BY q.created_at DESC`,
     productId,
   );
 }
 
-export function markAnswered(businessId: string, questionId: string, answered: boolean) {
-  run(
+export async function markAnswered(businessId: string, questionId: string, answered: boolean) {
+  await run(
     `UPDATE questions SET status = ?, answered_at = ? WHERE id = ? AND business_id = ?`,
     answered ? "answered" : "waiting",
     answered ? new Date().toISOString() : null,

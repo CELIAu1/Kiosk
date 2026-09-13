@@ -15,7 +15,7 @@ export default async function NewProductPage({
 }) {
   const { shopId } = await params;
   const session = await requireSession();
-  const shop = getShop(session.business.id, shopId);
+  const shop = await getShop(session.business.id, shopId);
   if (!shop) notFound();
 
   return (
@@ -29,7 +29,9 @@ export default async function NewProductPage({
         <ProductForm
           currency={session.business.currency}
           shopId={shop.id}
-          categories={listCategories(session.business.id, shop.id).map((c) => c.name)}
+          categories={(await listCategories(session.business.id, shop.id)).map(
+            (c) => c.name,
+          )}
         />
       </div>
     </>

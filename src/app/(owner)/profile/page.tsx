@@ -25,11 +25,11 @@ export default async function ProfilePage() {
   const session = await requireSession();
   const business = session.business;
 
-  const shops = listShops(business.id);
-  const products = listProducts(business.id);
-  const pulse = getPulse(business.id, 30);
+  const shops = await listShops(business.id);
+  const products = await listProducts(business.id);
+  const pulse = await getPulse(business.id, 30);
   const base = await origin();
-  const newOrders = countOrders(business.id, "new");
+  const newOrders = await countOrders(business.id, "new");
 
   return (
     <>

@@ -20,7 +20,7 @@ export async function saveImage(file: File): Promise<string> {
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
   const id = newId("img");
-  run(
+  await run(
     `INSERT INTO images (id, mime, bytes, created_at) VALUES (?, ?, ?, ?)`,
     id,
     file.type,
@@ -30,7 +30,7 @@ export async function saveImage(file: File): Promise<string> {
   return id;
 }
 
-export function getImage(id: string) {
+export async function getImage(id: string) {
   return one<{ mime: string; bytes: Uint8Array }>(
     `SELECT mime, bytes FROM images WHERE id = ?`,
     id,

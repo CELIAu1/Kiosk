@@ -22,14 +22,14 @@ export default async function ShopLayout({
   params: Promise<{ handle: string }>;
 }) {
   const { handle } = await params;
-  const shop = getShopByHandle(handle);
+  const shop = await getShopByHandle(handle);
   if (!shop) notFound();
 
-  const business = getBusinessById(shop.business_id);
+  const business = await getBusinessById(shop.business_id);
   if (!business) notFound();
 
   const visitorId = await getVisitorId(shop.business_id);
-  const count = visitorId ? cartCount(visitorId, shop.id) : 0;
+  const count = visitorId ? await cartCount(visitorId, shop.id) : 0;
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-[480px] bg-surface">

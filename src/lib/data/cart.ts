@@ -13,7 +13,7 @@ const LINE_SELECT = `
     LEFT JOIN product_options po ON po.id = ci.option_id
 `;
 
-export function listCart(visitorId: string, shopId: string): CartLine[] {
+export async function listCart(visitorId: string, shopId: string): Promise<CartLine[]> {
   return all<CartLine>(
     `${LINE_SELECT} WHERE ci.visitor_id = ? AND ci.shop_id = ? ORDER BY ci.created_at`,
     visitorId,
@@ -21,14 +21,14 @@ export function listCart(visitorId: string, shopId: string): CartLine[] {
   );
 }
 
-export function cartCount(visitorId: string, shopId: string): number {
+export async function cartCount(visitorId: string, shopId: string): Promise<number> {
   return (
-    one<{ n: number }>(
+    (await one<{ n: number }>(
       `SELECT COALESCE(SUM(qty), 0) AS n FROM cart_items
         WHERE visitor_id = ? AND shop_id = ?`,
       visitorId,
       shopId,
-    )?.n ?? 0
+    ))?.n ?? 0
   );
 }
 
@@ -36,7 +36,7 @@ export function cartTotal(lines: CartLine[]): number {
   return lines.reduce((sum, line) => sum + line.price_minor * line.qty, 0);
 }
 
-export function addToCart(input: {
+export async function addToCart(input: {
   visitorId: string;
   businessId: string;
   shopId: string;
@@ -46,7 +46,7 @@ export function addToCart(input: {
 }) {
   const qty = Math.max(1, input.qty ?? 1);
   // Same product and same option is the same line, not a second one.
-  const existing = one<{ id: string; qty: number }>(
+  const existing = await one<{ id: string; qty: number }>(
     `SELECT id, qty FROM cart_items
       WHERE visitor_id = ? AND product_id = ? AND option_id IS ?`,
     input.visitorId,
@@ -54,10 +54,10 @@ export function addToCart(input: {
     input.optionId,
   );
   if (existing) {
-    run(`UPDATE cart_items SET qty = ? WHERE id = ?`, existing.qty + qty, existing.id);
+    await run(`UPDATE cart_items SET qty = ? WHERE id = ?`, existing.qty + qty, existing.id);
     return;
   }
-  run(
+  await run(
     `INSERT INTO cart_items
        (id, visitor_id, business_id, shop_id, product_id, option_id, qty, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -72,12 +72,12 @@ export function addToCart(input: {
   );
 }
 
-export function setCartQty(visitorId: string, lineId: string, qty: number) {
+export async function setCartQty(visitorId: string, lineId: string, qty: number) {
   if (qty <= 0) {
-    run(`DELETE FROM cart_items WHERE id = ? AND visitor_id = ?`, lineId, visitorId);
+    await run(`DELETE FROM cart_items WHERE id = ? AND visitor_id = ?`, lineId, visitorId);
     return;
   }
-  run(
+  await run(
     `UPDATE cart_items SET qty = ? WHERE id = ? AND visitor_id = ?`,
     Math.min(qty, 99),
     lineId,
@@ -85,8 +85,8 @@ export function setCartQty(visitorId: string, lineId: string, qty: number) {
   );
 }
 
-export function clearCart(visitorId: string, shopId: string) {
-  run(
+export async function clearCart(visitorId: string, shopId: string) {
+  await run(
     `DELETE FROM cart_items WHERE visitor_id = ? AND shop_id = ?`,
     visitorId,
     shopId,

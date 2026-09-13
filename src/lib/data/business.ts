@@ -1,15 +1,15 @@
 import { all, one, run } from "../db";
 import type { Business, Category } from "../types";
 
-export function getBusinessById(id: string) {
+export async function getBusinessById(id: string) {
   return one<Business>(`SELECT * FROM businesses WHERE id = ?`, id);
 }
 
-export function getBusinessBySlug(slug: string) {
+export async function getBusinessBySlug(slug: string) {
   return one<Business>(`SELECT * FROM businesses WHERE slug = ?`, slug);
 }
 
-export function listCategories(businessId: string, shopId?: string) {
+export async function listCategories(businessId: string, shopId?: string) {
   if (shopId) {
     return all<Category>(
       `SELECT * FROM categories WHERE business_id = ? AND shop_id = ?
@@ -25,7 +25,7 @@ export function listCategories(businessId: string, shopId?: string) {
 }
 
 /** Categories in one shop that a customer can actually see right now. */
-export function listPublicCategories(shopId: string) {
+export async function listPublicCategories(shopId: string) {
   return all<Category & { product_count: number }>(
     `SELECT c.*, COUNT(p.id) AS product_count
        FROM categories c
@@ -38,7 +38,7 @@ export function listPublicCategories(shopId: string) {
   );
 }
 
-export function updateBusiness(
+export async function updateBusiness(
   id: string,
   fields: Partial<
     Pick<
@@ -61,7 +61,7 @@ export function updateBusiness(
   if (keys.length === 0) return;
   const setters = keys.map((key) => `${key} = ?`).join(", ");
   const values = keys.map((key) => fields[key] ?? null);
-  run(`UPDATE businesses SET ${setters} WHERE id = ?`, ...values, id);
+  await run(`UPDATE businesses SET ${setters} WHERE id = ?`, ...values, id);
 }
 
 /** Slugs live in customer-facing URLs, so keep them short and predictable. */
@@ -74,8 +74,8 @@ export function slugify(input: string): string {
     .slice(0, 40);
 }
 
-export function isSlugTaken(slug: string, exceptBusinessId?: string): boolean {
-  const row = one<{ id: string }>(
+export async function isSlugTaken(slug: string, exceptBusinessId?: string): Promise<boolean> {
+  const row = await one<{ id: string }>(
     `SELECT id FROM businesses WHERE slug = ?`,
     slug,
   );

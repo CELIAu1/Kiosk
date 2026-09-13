@@ -2,6 +2,9 @@
   "name": "kiosk",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,9 +12,11 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:seed": "node --experimental-strip-types scripts/seed.ts",
-    "db:reset": "rm -f data/kiosk.db && npm run db:seed"
+    "db:reset": "rm -f data/kiosk.db data/kiosk.db-shm data/kiosk.db-wal && npm run db:seed",
+    "db:migrate": "node --experimental-strip-types scripts/migrate.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"

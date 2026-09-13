@@ -23,7 +23,7 @@ const SELECT = `
     JOIN customers c ON c.id = o.customer_id
 `;
 
-export function listOrders(businessId: string, status?: OrderStatus): OrderRow[] {
+export async function listOrders(businessId: string, status?: OrderStatus): Promise<OrderRow[]> {
   const clause = status ? ` AND o.status = ?` : "";
   const params: string[] = status ? [businessId, status] : [businessId];
   return all<OrderRow>(
@@ -32,14 +32,14 @@ export function listOrders(businessId: string, status?: OrderStatus): OrderRow[]
   );
 }
 
-export function listCustomerOrders(customerId: string): OrderRow[] {
+export async function listCustomerOrders(customerId: string): Promise<OrderRow[]> {
   return all<OrderRow>(
     `${SELECT} WHERE o.customer_id = ? ORDER BY o.created_at DESC`,
     customerId,
   );
 }
 
-export function getOrder(businessId: string, orderId: string) {
+export async function getOrder(businessId: string, orderId: string) {
   return one<OrderRow>(
     `${SELECT} WHERE o.business_id = ? AND o.id = ?`,
     businessId,
@@ -48,44 +48,44 @@ export function getOrder(businessId: string, orderId: string) {
 }
 
 /** Used by the customer-facing receipt, which is scoped by id alone. */
-export function getOrderById(orderId: string) {
+export async function getOrderById(orderId: string) {
   return one<OrderRow>(`${SELECT} WHERE o.id = ?`, orderId);
 }
 
-export function listOrderItems(orderId: string) {
+export async function listOrderItems(orderId: string) {
   return all<OrderItem>(
     `SELECT * FROM order_items WHERE order_id = ? ORDER BY rowid`,
     orderId,
   );
 }
 
-export function countOrders(businessId: string, status: OrderStatus): number {
+export async function countOrders(businessId: string, status: OrderStatus): Promise<number> {
   return (
-    one<{ n: number }>(
+    (await one<{ n: number }>(
       `SELECT COUNT(*) AS n FROM orders WHERE business_id = ? AND status = ?`,
       businessId,
       status,
-    )?.n ?? 0
+    ))?.n ?? 0
   );
 }
 
-export function placeOrder(input: {
+export async function placeOrder(input: {
   businessId: string;
   shopId: string;
   customerId: string;
   visitorId: string | null;
   lines: CartLine[];
   note: string | null;
-}): { id: string; reference: string } {
+}): Promise<{ id: string; reference: string }> {
   if (input.lines.length === 0) throw new Error("Cannot place an empty order");
 
   const id = newId("ord");
   const now = new Date().toISOString();
   const total = input.lines.reduce((sum, l) => sum + l.price_minor * l.qty, 0);
-  const reference = uniqueReference(input.businessId);
+  const reference = await uniqueReference(input.businessId);
 
-  tx(() => {
-    run(
+  await tx(async (t) => {
+    await t.run(
       `INSERT INTO orders
          (id, business_id, shop_id, customer_id, reference, status, total_minor,
           note, created_at, updated_at)
@@ -102,7 +102,7 @@ export function placeOrder(input: {
     );
 
     for (const line of input.lines) {
-      run(
+      await t.run(
         `INSERT INTO order_items
            (id, order_id, product_id, name_at_time, option_label, unit_minor, qty)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -115,29 +115,34 @@ export function placeOrder(input: {
         line.qty,
       );
       // Only counted stock moves; NULL means the owner is not tracking it.
-      run(
+      await t.run(
         `UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ? AND stock IS NOT NULL`,
         line.qty,
         line.product_id,
       );
-      recordInterest(input.businessId, "ordered", {
-        shopId: input.shopId,
-        productId: line.product_id,
-        customerId: input.customerId,
-        visitorId: input.visitorId,
-      });
+      await recordInterest(
+        input.businessId,
+        "ordered",
+        {
+          shopId: input.shopId,
+          productId: line.product_id,
+          customerId: input.customerId,
+          visitorId: input.visitorId,
+        },
+        t,
+      );
     }
   });
 
   return { id, reference };
 }
 
-export function setOrderStatus(
+export async function setOrderStatus(
   businessId: string,
   orderId: string,
   status: OrderStatus,
 ) {
-  run(
+  await run(
     `UPDATE orders SET status = ?, updated_at = ? WHERE id = ? AND business_id = ?`,
     status,
     new Date().toISOString(),
@@ -146,10 +151,10 @@ export function setOrderStatus(
   );
 }
 
-function uniqueReference(businessId: string): string {
+async function uniqueReference(businessId: string): Promise<string> {
   for (let attempt = 0; attempt < 10; attempt++) {
     const candidate = shortCode(5);
-    const clash = one<{ id: string }>(
+    const clash = await one<{ id: string }>(
       `SELECT id FROM orders WHERE business_id = ? AND reference = ?`,
       businessId,
       candidate,

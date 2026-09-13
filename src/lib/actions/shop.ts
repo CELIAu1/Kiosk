@@ -19,7 +19,7 @@ export async function saveShopAction(
 
   const requestedSlug = slugify(String(formData.get("slug") ?? ""));
   if (!requestedSlug) return { error: "Your shop link can't be empty." };
-  if (isSlugTaken(requestedSlug, session.business.id)) {
+  if (await isSlugTaken(requestedSlug, session.business.id)) {
     return { error: "That shop link is already taken. Try another." };
   }
 
@@ -36,7 +36,7 @@ export async function saveShopAction(
 
   const currency = String(formData.get("currency") ?? "NGN").trim().toUpperCase();
 
-  updateBusiness(session.business.id, {
+  await updateBusiness(session.business.id, {
     name,
     slug: requestedSlug,
     tagline: text(formData, "tagline"),

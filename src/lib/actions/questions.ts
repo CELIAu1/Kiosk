@@ -12,7 +12,7 @@ export async function markQuestionAnsweredAction(formData: FormData) {
   const answered = String(formData.get("answered") ?? "true") === "true";
   if (!id) return;
 
-  markAnswered(session.business.id, id, answered);
+  await markAnswered(session.business.id, id, answered);
   revalidatePath("/home");
   revalidatePath("/questions");
 }

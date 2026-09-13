@@ -35,9 +35,9 @@ export default async function OrderPage({
   const session = await requireSession();
   const business = session.business;
 
-  const order = getOrder(business.id, id);
+  const order = await getOrder(business.id, id);
   if (!order) notFound();
-  const items = listOrderItems(order.id);
+  const items = await listOrderItems(order.id);
 
   const message = whatsappLink(
     order.customer_phone,

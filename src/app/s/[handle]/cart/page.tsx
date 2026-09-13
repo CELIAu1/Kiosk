@@ -20,18 +20,18 @@ export default async function CartPage({
   params: Promise<{ handle: string }>;
 }) {
   const { handle } = await params;
-  const shop = getShopByHandle(handle);
+  const shop = await getShopByHandle(handle);
   if (!shop) notFound();
-  const business = getBusinessById(shop.business_id);
+  const business = await getBusinessById(shop.business_id);
   if (!business) notFound();
 
   const visitorId = await getVisitorId(shop.business_id);
-  const lines = visitorId ? listCart(visitorId, shop.id) : [];
+  const lines = visitorId ? await listCart(visitorId, shop.id) : [];
   const total = cartTotal(lines);
 
   // Opening this page is a real signal: someone got as far as checking out.
   if (visitorId && lines.length > 0) {
-    recordInterest(shop.business_id, "checkout_started", { shopId: shop.id, visitorId });
+    await recordInterest(shop.business_id, "checkout_started", { shopId: shop.id, visitorId });
   }
 
   if (lines.length === 0) {

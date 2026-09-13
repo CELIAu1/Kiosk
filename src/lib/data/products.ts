@@ -1,4 +1,4 @@
-import { all, one, run, tx } from "../db";
+import { all, one, run, tx, type Tx } from "../db.ts";
 import { newId } from "../ids";
 import type { Product, ProductCard, ProductOption, ProductStatus } from "../types";
 
@@ -22,7 +22,7 @@ const CARD_SELECT = `
     FROM products p
 `;
 
-export function listProducts(
+export async function listProducts(
   businessId: string,
   opts: {
     search?: string;
@@ -30,7 +30,7 @@ export function listProducts(
     shopId?: string;
     publicOnly?: boolean;
   } = {},
-): ProductCard[] {
+): Promise<ProductCard[]> {
   const where = [`p.business_id = ?`];
   const params: (string | number)[] = [businessId];
 
@@ -55,7 +55,7 @@ export function listProducts(
   );
 }
 
-export function getProductCard(businessId: string, productId: string) {
+export async function getProductCard(businessId: string, productId: string) {
   return one<ProductCard>(
     `${CARD_SELECT} WHERE p.business_id = ? AND p.id = ?`,
     businessId,
@@ -63,7 +63,7 @@ export function getProductCard(businessId: string, productId: string) {
   );
 }
 
-export function getProduct(businessId: string, productId: string) {
+export async function getProduct(businessId: string, productId: string) {
   return one<Product>(
     `SELECT * FROM products WHERE business_id = ? AND id = ?`,
     businessId,
@@ -71,21 +71,22 @@ export function getProduct(businessId: string, productId: string) {
   );
 }
 
-export function listProductImages(productId: string): string[] {
-  return all<{ image_id: string }>(
+export async function listProductImages(productId: string): Promise<string[]> {
+  const rows = await all<{ image_id: string }>(
     `SELECT image_id FROM product_images WHERE product_id = ? ORDER BY position`,
     productId,
-  ).map((row) => row.image_id);
+  );
+  return rows.map((row) => row.image_id);
 }
 
-export function listProductOptions(productId: string) {
+export async function listProductOptions(productId: string) {
   return all<ProductOption>(
     `SELECT * FROM product_options WHERE product_id = ? ORDER BY position, label`,
     productId,
   );
 }
 
-export function getOption(optionId: string) {
+export async function getOption(optionId: string) {
   return one<ProductOption>(`SELECT * FROM product_options WHERE id = ?`, optionId);
 }
 
@@ -102,11 +103,11 @@ export type ProductInput = {
   imageIds: string[];
 };
 
-export function createProduct(businessId: string, input: ProductInput): string {
+export async function createProduct(businessId: string, input: ProductInput): Promise<string> {
   const id = newId("prd");
   const now = new Date().toISOString();
-  tx(() => {
-    run(
+  await tx(async (t) => {
+    await t.run(
       `INSERT INTO products
          (id, business_id, shop_id, category_id, name, description, price_minor,
           compare_at_minor, status, stock, created_at, updated_at)
@@ -124,20 +125,20 @@ export function createProduct(businessId: string, input: ProductInput): string {
       now,
       now,
     );
-    writeImages(id, input.imageIds);
-    writeOptions(id, input.options);
+    await writeImages(t, id, input.imageIds);
+    await writeOptions(t, id, input.options);
   });
   return id;
 }
 
-export function updateProduct(
+export async function updateProduct(
   businessId: string,
   productId: string,
   input: ProductInput,
 ) {
   const now = new Date().toISOString();
-  tx(() => {
-    run(
+  await tx(async (t) => {
+    await t.run(
       `UPDATE products
           SET shop_id = ?, category_id = ?, name = ?, description = ?, price_minor = ?,
               compare_at_minor = ?, status = ?, stock = ?, updated_at = ?
@@ -154,20 +155,20 @@ export function updateProduct(
       productId,
       businessId,
     );
-    run(`DELETE FROM product_images WHERE product_id = ?`, productId);
-    writeImages(productId, input.imageIds);
+    await t.run(`DELETE FROM product_images WHERE product_id = ?`, productId);
+    await writeImages(t, productId, input.imageIds);
     // Options are replaced wholesale; they are short lists the owner retypes.
-    run(`DELETE FROM product_options WHERE product_id = ?`, productId);
-    writeOptions(productId, input.options);
+    await t.run(`DELETE FROM product_options WHERE product_id = ?`, productId);
+    await writeOptions(t, productId, input.options);
   });
 }
 
-export function setProductStatus(
+export async function setProductStatus(
   businessId: string,
   productId: string,
   status: ProductStatus,
 ) {
-  run(
+  await run(
     `UPDATE products SET status = ?, updated_at = ? WHERE id = ? AND business_id = ?`,
     status,
     new Date().toISOString(),
@@ -176,25 +177,25 @@ export function setProductStatus(
   );
 }
 
-export function deleteProduct(businessId: string, productId: string) {
-  run(`DELETE FROM products WHERE id = ? AND business_id = ?`, productId, businessId);
+export async function deleteProduct(businessId: string, productId: string) {
+  await run(`DELETE FROM products WHERE id = ? AND business_id = ?`, productId, businessId);
 }
 
-function writeImages(productId: string, imageIds: string[]) {
-  imageIds.forEach((imageId, index) => {
-    run(
+async function writeImages(t: Tx, productId: string, imageIds: string[]) {
+  for (const [index, imageId] of imageIds.entries()) {
+    await t.run(
       `INSERT INTO product_images (id, product_id, image_id, position) VALUES (?, ?, ?, ?)`,
       newId("pim"),
       productId,
       imageId,
       index,
     );
-  });
+  }
 }
 
-function writeOptions(productId: string, options: string[]) {
-  options.forEach((label, index) => {
-    run(
+async function writeOptions(t: Tx, productId: string, options: string[]) {
+  for (const [index, label] of options.entries()) {
+    await t.run(
       `INSERT INTO product_options (id, product_id, label, in_stock, position)
        VALUES (?, ?, ?, 1, ?)`,
       newId("opt"),
@@ -202,7 +203,7 @@ function writeOptions(productId: string, options: string[]) {
       label,
       index,
     );
-  });
+  }
 }
 
 /** True when a customer can actually place an order for this product. */

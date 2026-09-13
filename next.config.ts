@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // node:sqlite is a Node builtin used by the data layer; keep it server-only.
-  serverExternalPackages: ["node:sqlite"],
+  // The libSQL client has native bindings for file: URLs, so it must not be
+  // bundled — it is required at runtime instead.
+  serverExternalPackages: ["@libsql/client", "libsql"],
 };
 
 export default nextConfig;

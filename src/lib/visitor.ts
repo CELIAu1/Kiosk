@@ -22,34 +22,37 @@ export async function getVisitorId(businessId: string): Promise<string | null> {
   if (!token) return null;
 
   const now = new Date().toISOString();
-  const existing = one<{ id: string }>(
+
+  // A layout and its page render concurrently, so two requests can reach this
+  // at once with the same brand-new token. Insert-then-read, letting the
+  // unique index decide the winner, rather than read-then-insert — which
+  // races and trips the constraint.
+  await run(
+    `INSERT INTO visitors
+       (id, business_id, device_token, customer_id, source, created_at, last_seen_at)
+     VALUES (?, ?, ?, NULL, NULL, ?, ?)
+     ON CONFLICT (business_id, device_token)
+       DO UPDATE SET last_seen_at = excluded.last_seen_at`,
+    newId("vis"),
+    businessId,
+    token,
+    now,
+    now,
+  );
+
+  const visitor = await one<{ id: string }>(
     `SELECT id FROM visitors WHERE business_id = ? AND device_token = ?`,
     businessId,
     token,
   );
-  if (existing) {
-    run(`UPDATE visitors SET last_seen_at = ? WHERE id = ?`, now, existing.id);
-    return existing.id;
-  }
-
-  const id = newId("vis");
-  run(
-    `INSERT INTO visitors (id, business_id, device_token, customer_id, source, created_at, last_seen_at)
-     VALUES (?, ?, ?, NULL, NULL, ?, ?)`,
-    id,
-    businessId,
-    token,
-    now,
-    now,
-  );
-  return id;
+  return visitor?.id ?? null;
 }
 
 /** Once a visitor identifies themselves, stitch their history to the person. */
-export function linkVisitorToCustomer(visitorId: string, customerId: string) {
-  run(`UPDATE visitors SET customer_id = ? WHERE id = ?`, customerId, visitorId);
+export async function linkVisitorToCustomer(visitorId: string, customerId: string) {
+  await run(`UPDATE visitors SET customer_id = ? WHERE id = ?`, customerId, visitorId);
   // Backfill so the owner sees the whole trail, not just what happened after.
-  run(
+  await run(
     `UPDATE interest_events SET customer_id = ? WHERE visitor_id = ? AND customer_id IS NULL`,
     customerId,
     visitorId,

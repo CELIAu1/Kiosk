@@ -34,11 +34,11 @@ export default async function CustomerPage({
   const session = await requireSession();
   const business = session.business;
 
-  const customer = getCustomer(business.id, id);
+  const customer = await getCustomer(business.id, id);
   if (!customer) notFound();
 
-  const orders = listCustomerOrders(customer.id);
-  const activity = customerActivity(customer.id);
+  const orders = await listCustomerOrders(customer.id);
+  const activity = await customerActivity(customer.id);
   const message = whatsappLink(
     customer.phone,
     `Hi ${customer.name.split(" ")[0]}, it's ${business.name}. `,

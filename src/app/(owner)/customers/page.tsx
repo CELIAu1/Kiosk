@@ -17,7 +17,7 @@ export default async function CustomersPage({
   const session = await requireSession();
   const business = session.business;
   const { q } = await searchParams;
-  const customers = listCustomers(business.id, q);
+  const customers = await listCustomers(business.id, q);
 
   return (
     <>

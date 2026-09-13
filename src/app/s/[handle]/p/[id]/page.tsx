@@ -26,9 +26,9 @@ export async function generateMetadata({
   params: Promise<{ handle: string; id: string }>;
 }) {
   const { handle, id } = await params;
-  const shop = getShopByHandle(handle);
+  const shop = await getShopByHandle(handle);
   if (!shop) return { title: "Product" };
-  const product = getProduct(shop.business_id, id);
+  const product = await getProduct(shop.business_id, id);
   if (!product) return { title: "Product" };
   return {
     title: { absolute: `${product.name} · ${shop.name}` },
@@ -36,7 +36,7 @@ export async function generateMetadata({
     openGraph: {
       title: product.name,
       description: product.description ?? undefined,
-      images: listProductImages(product.id)
+      images: (await listProductImages(product.id))
         .slice(0, 1)
         .map((imageId) => `/api/images/${imageId}`),
     },
@@ -53,21 +53,21 @@ export default async function StorefrontProductPage({
   const { handle, id } = await params;
   const { asked } = await searchParams;
 
-  const shop = getShopByHandle(handle);
+  const shop = await getShopByHandle(handle);
   if (!shop) notFound();
-  const business = getBusinessById(shop.business_id);
+  const business = await getBusinessById(shop.business_id);
   if (!business) notFound();
 
-  const product = getProduct(shop.business_id, id);
+  const product = await getProduct(shop.business_id, id);
   // Hidden products are not 404s for the owner's preview link, but customers
   // arriving at one should simply not see it.
   if (!product || product.shop_id !== shop.id || product.status === "hidden") notFound();
 
   const visitorId = await getVisitorId(business.id);
-  if (visitorId) recordProductView(shop.business_id, shop.id, product.id, visitorId);
+  if (visitorId) await recordProductView(shop.business_id, shop.id, product.id, visitorId);
 
-  const images = listProductImages(product.id);
-  const options = listProductOptions(product.id);
+  const images = await listProductImages(product.id);
+  const options = await listProductOptions(product.id);
   const orderable = isOrderable(product);
   const lowStock = product.stock !== null && product.stock > 0 && product.stock <= 3;
 

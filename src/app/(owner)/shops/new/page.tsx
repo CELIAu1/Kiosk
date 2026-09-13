@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewShopPage() {
   const session = await requireSession();
-  const existing = countShops(session.business.id);
+  const existing = await countShops(session.business.id);
 
   return (
     <div className="pt-6">

@@ -18,7 +18,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ handle: string }>;
 }) {
-  const shop = getShopByHandle((await params).handle);
+  const shop = await getShopByHandle((await params).handle);
   if (!shop) return { title: "Shop" };
   return {
     title: { absolute: shop.name },
@@ -36,19 +36,19 @@ export default async function StorefrontPage({
   const { handle } = await params;
   const { q, c } = await searchParams;
 
-  const shop = getShopByHandle(handle);
+  const shop = await getShopByHandle(handle);
   if (!shop) notFound();
-  const business = getBusinessById(shop.business_id);
+  const business = await getBusinessById(shop.business_id);
   if (!business) notFound();
 
   const visitorId = await getVisitorId(shop.business_id);
   if (visitorId) {
-    recordInterest(shop.business_id, "viewed_shop", { shopId: shop.id, visitorId });
+    await recordInterest(shop.business_id, "viewed_shop", { shopId: shop.id, visitorId });
   }
 
-  const categories = listPublicCategories(shop.id);
+  const categories = await listPublicCategories(shop.id);
   const active = categories.find((category) => category.id === c);
-  const products = listProducts(shop.business_id, {
+  const products = await listProducts(shop.business_id, {
     shopId: shop.id,
     publicOnly: true,
     search: q,

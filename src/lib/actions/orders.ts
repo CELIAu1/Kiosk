@@ -15,7 +15,7 @@ export async function setOrderStatusAction(formData: FormData) {
   const status = String(formData.get("status") ?? "") as OrderStatus;
   if (!id || !VALID.includes(status)) return;
 
-  setOrderStatus(session.business.id, id, status);
+  await setOrderStatus(session.business.id, id, status);
   revalidatePath("/orders");
   revalidatePath(`/orders/${id}`);
   revalidatePath("/home");

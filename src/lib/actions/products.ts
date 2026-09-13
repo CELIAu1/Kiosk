@@ -66,7 +66,11 @@ async function readForm(
     description: String(formData.get("description") ?? "").trim() || null,
     priceMinor,
     compareAtMinor,
-    categoryId: resolveCategory(businessId, shopId, String(formData.get("category") ?? "")),
+    categoryId: await resolveCategory(
+      businessId,
+      shopId,
+      String(formData.get("category") ?? ""),
+    ),
     status,
     stock,
     options,
@@ -84,7 +88,7 @@ export async function createProductAction(
   const parsed = await readForm(session.business.id, formData, []);
   if ("error" in parsed) return parsed;
 
-  const id = createProduct(session.business.id, parsed);
+  const id = await createProduct(session.business.id, parsed);
   revalidatePath("/products");
   revalidatePath("/home");
   redirect(`/products/${id}`);
@@ -102,12 +106,12 @@ export async function updateProductAction(
 
   // Images the owner did not tick "remove" on stay, in their current order.
   const removed = new Set(formData.getAll("remove_image").map(String));
-  const keep = listProductImages(productId).filter((id) => !removed.has(id));
+  const keep = (await listProductImages(productId)).filter((id) => !removed.has(id));
 
   const parsed = await readForm(session.business.id, formData, keep);
   if ("error" in parsed) return parsed;
 
-  updateProduct(session.business.id, productId, parsed);
+  await updateProduct(session.business.id, productId, parsed);
   revalidatePath("/products");
   revalidatePath(`/products/${productId}`);
   redirect(`/products/${productId}`);
@@ -121,7 +125,7 @@ export async function setProductStatusAction(formData: FormData) {
   const status = String(formData.get("status") ?? "") as ProductStatus;
   if (!id || !STATUSES.includes(status)) return;
 
-  setProductStatus(session.business.id, id, status);
+  await setProductStatus(session.business.id, id, status);
   revalidatePath("/products");
   revalidatePath(`/products/${id}`);
 }
@@ -133,7 +137,7 @@ export async function deleteProductAction(formData: FormData) {
   const id = String(formData.get("product_id") ?? "");
   if (!id) return;
 
-  deleteProduct(session.business.id, id);
+  await deleteProduct(session.business.id, id);
   revalidatePath("/products");
   redirect("/products");
 }
@@ -142,15 +146,15 @@ export async function deleteProductAction(formData: FormData) {
  * Categories are typed, not managed. A small business shouldn't have to visit
  * a settings screen to say "this one is a sneaker".
  */
-function resolveCategory(
+async function resolveCategory(
   businessId: string,
   shopId: string,
   raw: string,
-): string | null {
+): Promise<string | null> {
   const name = raw.trim();
   if (!name) return null;
 
-  const existing = one<{ id: string }>(
+  const existing = await one<{ id: string }>(
     `SELECT id FROM categories WHERE shop_id = ? AND name = ? COLLATE NOCASE`,
     shopId,
     name,
@@ -158,11 +162,11 @@ function resolveCategory(
   if (existing) return existing.id;
 
   const id = newId("cat");
-  const next = one<{ n: number }>(
+  const next = await one<{ n: number }>(
     `SELECT COALESCE(MAX(position), 0) + 1 AS n FROM categories WHERE shop_id = ?`,
     shopId,
   );
-  run(
+  await run(
     `INSERT INTO categories (id, business_id, shop_id, name, position)
      VALUES (?, ?, ?, ?, ?)`,
     id,

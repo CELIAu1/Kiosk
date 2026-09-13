@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ShopsPage() {
   const session = await requireSession();
-  const shops = listShops(session.business.id);
+  const shops = await listShops(session.business.id);
   const base = await origin();
 
   return (

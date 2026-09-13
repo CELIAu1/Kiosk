@@ -37,13 +37,20 @@ export default async function InterestPage() {
   const session = await requireSession();
   const business = session.business;
 
-  const pulse = getPulse(business.id, 7);
-  const shops = listShops(business.id);
-  const summaries = recentInterestSummaries(business.id, 8);
-  const attention = mostViewedProducts(business.id, 8);
-  const stalled = productsWithUnconvertedInterest(business.id);
-  const followUps = customersToFollowUp(business.id);
-  const waiting = countWaitingQuestions(business.id);
+  const pulse = await getPulse(business.id, 7);
+  const shops = await listShops(business.id);
+  const summaries = await recentInterestSummaries(business.id, 8);
+  const attention = await mostViewedProducts(business.id, 8);
+  const stalled = await productsWithUnconvertedInterest(business.id);
+  const followUps = await customersToFollowUp(business.id);
+  const waiting = await countWaitingQuestions(business.id);
+
+  // Resolved up front: JSX cannot await inside a map callback.
+  const viewsByShop = new Map(
+    await Promise.all(
+      shops.map(async (shop) => [shop.id, await shopViews(shop.id, 7)] as const),
+    ),
+  );
 
   const nothingYet = summaries.length === 0 && attention.length === 0;
 
@@ -124,7 +131,7 @@ export default async function InterestPage() {
                           </span>
                         </span>
                         <span className="num shrink-0 text-[14px] font-semibold text-ink">
-                          {shopViews(shop.id, 7)}
+                          {viewsByShop.get(shop.id) ?? 0}
                         </span>
                       </Sunk>
                     </Link>

@@ -11,6 +11,6 @@ export async function saveCustomerNoteAction(formData: FormData) {
   const id = String(formData.get("customer_id") ?? "");
   if (!id) return;
 
-  setCustomerNote(session.business.id, id, String(formData.get("note") ?? ""));
+  await setCustomerNote(session.business.id, id, String(formData.get("note") ?? ""));
   revalidatePath(`/customers/${id}`);
 }

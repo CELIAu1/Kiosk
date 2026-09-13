@@ -27,7 +27,7 @@ export default async function OrdersPage({
   const { status } = await searchParams;
 
   const active = TABS.find((tab) => tab.key === status)?.key ?? "all";
-  const orders = listOrders(
+  const orders = await listOrders(
     business.id,
     active === "all" ? undefined : (active as OrderStatus),
   );

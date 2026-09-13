@@ -22,12 +22,16 @@ export default async function EditProductPage({
 }) {
   const { id } = await params;
   const session = await requireSession();
-  const product = getProduct(session.business.id, id);
+  const product = await getProduct(session.business.id, id);
   if (!product) notFound();
 
   const categoryName = product.category_id
-    ? (one<{ name: string }>(`SELECT name FROM categories WHERE id = ?`, product.category_id)
-        ?.name ?? null)
+    ? ((
+        await one<{ name: string }>(
+          `SELECT name FROM categories WHERE id = ?`,
+          product.category_id,
+        )
+      )?.name ?? null)
     : null;
 
   return (
@@ -41,14 +45,14 @@ export default async function EditProductPage({
           <ProductForm
             currency={session.business.currency}
             shopId={product.shop_id}
-            categories={listCategories(session.business.id, product.shop_id).map(
-              (c) => c.name,
-            )}
+            categories={(
+              await listCategories(session.business.id, product.shop_id)
+            ).map((c) => c.name)}
             existing={{
               product,
               categoryName,
-              imageIds: listProductImages(product.id),
-              options: listProductOptions(product.id).map((o) => o.label),
+              imageIds: await listProductImages(product.id),
+              options: (await listProductOptions(product.id)).map((o) => o.label),
             }}
           />
 

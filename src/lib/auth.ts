@@ -21,7 +21,7 @@ export async function createSession(userId: string) {
   const id = newId("ses");
   const now = new Date();
   const expires = new Date(now.getTime() + SESSION_DAYS * 86_400_000);
-  run(
+  await run(
     `INSERT INTO sessions (id, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)`,
     id,
     userId,
@@ -41,7 +41,7 @@ export async function createSession(userId: string) {
 export async function destroySession() {
   const jar = await cookies();
   const id = jar.get(SESSION_COOKIE)?.value;
-  if (id) run(`DELETE FROM sessions WHERE id = ?`, id);
+  if (id) await run(`DELETE FROM sessions WHERE id = ?`, id);
   jar.delete(SESSION_COOKIE);
 }
 
@@ -51,7 +51,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const id = jar.get(SESSION_COOKIE)?.value;
   if (!id) return null;
 
-  const row = one<{
+  const row = await one<{
     user_id: string;
     email: string;
     name: string | null;
@@ -65,11 +65,14 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   );
   if (!row) return null;
   if (new Date(row.expires_at) < new Date()) {
-    run(`DELETE FROM sessions WHERE id = ?`, id);
+    await run(`DELETE FROM sessions WHERE id = ?`, id);
     return null;
   }
 
-  const business = one<Business>(`SELECT * FROM businesses WHERE id = ?`, row.business_id);
+  const business = await one<Business>(
+    `SELECT * FROM businesses WHERE id = ?`,
+    row.business_id,
+  );
   if (!business) return null;
 
   return { id: row.user_id, email: row.email, name: row.name, business };

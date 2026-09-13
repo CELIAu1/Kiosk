@@ -25,10 +25,10 @@ export default async function PriceBookPage({
   const business = session.business;
   const { q, shop } = await searchParams;
 
-  const shops = listShops(business.id);
+  const shops = await listShops(business.id);
   const activeShop = shops.find((s) => s.id === shop) ?? shops[0];
   const products = activeShop
-    ? listProducts(business.id, { shopId: activeShop.id, search: q })
+    ? await listProducts(business.id, { shopId: activeShop.id, search: q })
     : [];
 
   return (

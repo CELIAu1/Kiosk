@@ -28,7 +28,7 @@ const SUMMARY_SELECT = `
     FROM customers c
 `;
 
-export function listCustomers(businessId: string, search?: string): CustomerSummary[] {
+export async function listCustomers(businessId: string, search?: string): Promise<CustomerSummary[]> {
   const params: (string | number)[] = [businessId];
   let where = `c.business_id = ?`;
   if (search?.trim()) {
@@ -42,7 +42,7 @@ export function listCustomers(businessId: string, search?: string): CustomerSumm
   );
 }
 
-export function getCustomer(businessId: string, customerId: string) {
+export async function getCustomer(businessId: string, customerId: string) {
   return one<CustomerSummary>(
     `${SUMMARY_SELECT} WHERE c.business_id = ? AND c.id = ?`,
     businessId,
@@ -54,21 +54,21 @@ export function getCustomer(businessId: string, customerId: string) {
  * Customers identify themselves by phone number when they ask or order.
  * Matching on that turns repeat DMs into one person with a history.
  */
-export function findOrCreateCustomer(
+export async function findOrCreateCustomer(
   businessId: string,
   input: { name: string; phone?: string | null; instagram?: string | null },
-): Customer {
+): Promise<Customer> {
   const now = new Date().toISOString();
   const phone = normalisePhone(input.phone);
 
   if (phone) {
-    const existing = one<Customer>(
+    const existing = await one<Customer>(
       `SELECT * FROM customers WHERE business_id = ? AND phone = ?`,
       businessId,
       phone,
     );
     if (existing) {
-      run(
+      await run(
         `UPDATE customers SET name = ?, instagram = COALESCE(?, instagram), last_seen_at = ?
           WHERE id = ?`,
         input.name.trim() || existing.name,
@@ -90,7 +90,7 @@ export function findOrCreateCustomer(
     created_at: now,
     last_seen_at: now,
   };
-  run(
+  await run(
     `INSERT INTO customers
        (id, business_id, name, phone, instagram, note, created_at, last_seen_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -106,16 +106,16 @@ export function findOrCreateCustomer(
   return customer;
 }
 
-export function touchCustomer(customerId: string) {
-  run(
+export async function touchCustomer(customerId: string) {
+  await run(
     `UPDATE customers SET last_seen_at = ? WHERE id = ?`,
     new Date().toISOString(),
     customerId,
   );
 }
 
-export function setCustomerNote(businessId: string, customerId: string, note: string) {
-  run(
+export async function setCustomerNote(businessId: string, customerId: string, note: string) {
+  await run(
     `UPDATE customers SET note = ? WHERE id = ? AND business_id = ?`,
     note.trim() || null,
     customerId,
@@ -133,7 +133,7 @@ export type CustomerActivity = {
 };
 
 /** One timeline per person: what they looked at, asked and bought. */
-export function customerActivity(customerId: string): CustomerActivity[] {
+export async function customerActivity(customerId: string): Promise<CustomerActivity[]> {
   return all<CustomerActivity>(
     `SELECT e.id, e.created_at AS at, e.kind, NULL AS detail,
             e.product_id, p.name AS product_name
@@ -157,9 +157,9 @@ export function customerActivity(customerId: string): CustomerActivity[] {
  * People who showed real interest but never ordered — the follow-up list.
  * This is the list a small business would otherwise keep in their head.
  */
-export function customersToFollowUp(businessId: string, days = 21) {
+export async function customersToFollowUp(businessId: string, days = 21) {
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
-  return all<CustomerSummary>(
+  const candidates = await all<CustomerSummary>(
     `${SUMMARY_SELECT}
       WHERE c.business_id = ?
         AND c.last_seen_at > ?
@@ -173,15 +173,22 @@ export function customersToFollowUp(businessId: string, days = 21) {
       LIMIT 8`,
     businessId,
     since,
-  ).map((customer) => ({
-    ...customer,
-    last_product:
-      one<{ name: string }>(
-        `SELECT p.name FROM interest_events e
-           JOIN products p ON p.id = e.product_id
-          WHERE e.customer_id = ? AND e.product_id IS NOT NULL
-          ORDER BY e.created_at DESC LIMIT 1`,
-        customer.id,
-      )?.name ?? null,
-  }));
+  );
+
+  // One extra lookup per candidate, run together rather than in series.
+  return Promise.all(
+    candidates.map(async (customer) => ({
+      ...customer,
+      last_product:
+        (
+          await one<{ name: string }>(
+            `SELECT p.name FROM interest_events e
+               JOIN products p ON p.id = e.product_id
+              WHERE e.customer_id = ? AND e.product_id IS NOT NULL
+              ORDER BY e.created_at DESC LIMIT 1`,
+            customer.id,
+          )
+        )?.name ?? null,
+    })),
+  );
 }

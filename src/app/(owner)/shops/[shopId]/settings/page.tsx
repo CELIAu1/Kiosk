@@ -14,7 +14,7 @@ export default async function ShopSettingsPage({
 }) {
   const { shopId } = await params;
   const session = await requireSession();
-  const shop = getShop(session.business.id, shopId);
+  const shop = await getShop(session.business.id, shopId);
   if (!shop) notFound();
 
   return (

@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { one, run, tx } from "@/lib/db";
+import { tx, type Tx } from "@/lib/db";
 import { newId } from "@/lib/ids";
 import { createSession, destroySession, findUserByEmail, hashPassword, verifyPassword } from "@/lib/auth";
 import { slugify } from "@/lib/data/business";
@@ -17,7 +17,7 @@ export async function signInAction(
 
   if (!email || !password) return { error: "Enter your email and password." };
 
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
   // Same message either way: don't reveal which emails exist.
   if (!user || !verifyPassword(password, user.password_hash)) {
     return { error: "That email and password don't match." };
@@ -40,15 +40,15 @@ export async function signUpAction(
   if (!businessName) return { error: "What is your business called?" };
   if (!email.includes("@")) return { error: "Enter a valid email address." };
   if (password.length < 8) return { error: "Use a password of at least 8 characters." };
-  if (findUserByEmail(email)) return { error: "That email already has a KIOSK." };
+  if (await findUserByEmail(email)) return { error: "That email already has a KIOSK." };
 
   const businessId = newId("biz");
   const userId = newId("usr");
   const now = new Date().toISOString();
 
-  tx(() => {
-    const slug = availableSlug(businessName);
-    run(
+  await tx(async (t) => {
+    const slug = await availableSlug(t, businessName);
+    await t.run(
       `INSERT INTO businesses
          (id, name, slug, tagline, owner_name, whatsapp, instagram, tiktok,
           location, currency, logo_image_id, handle, created_at)
@@ -62,7 +62,7 @@ export async function signUpAction(
       `shoop.${slug.replace(/-/g, "")}`.slice(0, 40),
       now,
     );
-    run(
+    await t.run(
       `INSERT INTO users (id, business_id, email, password_hash, name, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       userId,
@@ -84,11 +84,11 @@ export async function signOutAction() {
 }
 
 /** Turns a business name into a free shop URL, adding a suffix on collision. */
-function availableSlug(name: string): string {
+async function availableSlug(t: Tx, name: string): Promise<string> {
   const base = slugify(name) || "shop";
   for (let attempt = 0; attempt < 50; attempt++) {
     const candidate = attempt === 0 ? base : `${base}-${attempt + 1}`;
-    const taken = one<{ id: string }>(
+    const taken = await t.one<{ id: string }>(
       `SELECT id FROM businesses WHERE slug = ?`,
       candidate,
     );

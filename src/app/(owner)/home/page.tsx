@@ -41,13 +41,13 @@ export default async function HomePage() {
   const session = await requireSession();
   const business = session.business;
 
-  const shops = listShops(business.id);
-  const pulse = getPulse(business.id, 7);
-  const interest = recentInterestSummaries(business.id, 3);
-  const attention = mostViewedProducts(business.id, 6);
-  const products = listProducts(business.id);
-  const waiting = countWaitingQuestions(business.id);
-  const newOrders = countOrders(business.id, "new");
+  const shops = await listShops(business.id);
+  const pulse = await getPulse(business.id, 7);
+  const interest = await recentInterestSummaries(business.id, 3);
+  const attention = await mostViewedProducts(business.id, 6);
+  const products = await listProducts(business.id);
+  const waiting = await countWaitingQuestions(business.id);
+  const newOrders = await countOrders(business.id, "new");
 
   const firstName = (business.owner_name ?? business.name).split(" ")[0];
 

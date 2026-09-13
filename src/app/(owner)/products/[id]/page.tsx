@@ -31,7 +31,7 @@ export async function generateMetadata({
 }) {
   const session = await getSessionUser();
   if (!session) return { title: "Product" };
-  const product = getProductCard(session.business.id, (await params).id);
+  const product = await getProductCard(session.business.id, (await params).id);
   return { title: product?.name ?? "Product" };
 }
 
@@ -44,13 +44,13 @@ export default async function ProductPage({
   const session = await requireSession();
   const business = session.business;
 
-  const product = getProductCard(business.id, id);
+  const product = await getProductCard(business.id, id);
   if (!product) notFound();
 
-  const images = listProductImages(product.id);
-  const options = listProductOptions(product.id);
-  const questions = listProductQuestions(product.id);
-  const funnel = productFunnel(product.id);
+  const images = await listProductImages(product.id);
+  const options = await listProductOptions(product.id);
+  const questions = await listProductQuestions(product.id);
+  const funnel = await productFunnel(product.id);
   const outOfStock = product.stock !== null && product.stock <= 0;
 
   return (

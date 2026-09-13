@@ -20,7 +20,7 @@ export async function generateMetadata({
 }) {
   const session = await getSessionUser();
   if (!session) return { title: "Shop" };
-  const shop = getShop(session.business.id, (await params).shopId);
+  const shop = await getShop(session.business.id, (await params).shopId);
   return { title: shop?.name ?? "Shop" };
 }
 
@@ -36,12 +36,12 @@ export default async function ShopCataloguePage({
   const session = await requireSession();
   const business = session.business;
 
-  const shop = getShop(business.id, shopId);
+  const shop = await getShop(business.id, shopId);
   if (!shop) notFound();
 
-  const categories = listCategories(business.id, shop.id);
+  const categories = await listCategories(business.id, shop.id);
   const active = categories.find((category) => category.id === c);
-  const products = listProducts(business.id, {
+  const products = await listProducts(business.id, {
     shopId: shop.id,
     categoryId: active?.id,
   });

@@ -10,7 +10,7 @@ export default async function LandingPage() {
   if (await getSessionUser()) redirect("/home");
 
   // If a shop exists, offer it as something real to look at.
-  const [example] = all<{ tag: string; name: string }>(
+  const [example] = await all<{ tag: string; name: string }>(
     `SELECT tag, name FROM shops ORDER BY created_at LIMIT 1`,
   );
 

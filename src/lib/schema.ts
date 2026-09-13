@@ -8,10 +8,7 @@
  * Money is stored in minor units (kobo, cents) as integers. Never floats.
  * Timestamps are ISO-8601 UTC strings so they sort lexicographically.
  */
-export const SCHEMA = `
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
-
+const SCHEMA = `
 CREATE TABLE IF NOT EXISTS businesses (
   id             TEXT PRIMARY KEY,
   name           TEXT NOT NULL,
@@ -212,3 +209,12 @@ CREATE TABLE IF NOT EXISTS order_items (
 );
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 `;
+
+/**
+ * libSQL applies the schema as a batch of individual statements rather than
+ * one script, so the DDL above is split here. Nothing in it contains a
+ * semicolon inside a literal, which makes the split safe.
+ */
+export const SCHEMA_STATEMENTS: string[] = SCHEMA.split(";")
+  .map((statement) => statement.trim())
+  .filter(Boolean);

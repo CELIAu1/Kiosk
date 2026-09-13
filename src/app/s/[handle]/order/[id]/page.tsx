@@ -17,15 +17,15 @@ export default async function OrderReceiptPage({
   params: Promise<{ handle: string; id: string }>;
 }) {
   const { handle, id } = await params;
-  const shop = getShopByHandle(handle);
+  const shop = await getShopByHandle(handle);
   if (!shop) notFound();
-  const business = getBusinessById(shop.business_id);
+  const business = await getBusinessById(shop.business_id);
   if (!business) notFound();
 
-  const order = getOrderById(id);
+  const order = await getOrderById(id);
   if (!order || order.business_id !== shop.business_id) notFound();
 
-  const items = listOrderItems(order.id);
+  const items = await listOrderItems(order.id);
   const whatsapp = whatsappLink(
     business.whatsapp,
     `Hi ${shop.name}, this is ${order.customer_name} about order ${order.reference}.`,

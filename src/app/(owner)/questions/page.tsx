@@ -16,7 +16,7 @@ export default async function QuestionsPage({
   const session = await requireSession();
   const { status } = await searchParams;
   const filter = status === "answered" ? "answered" : status === "all" ? undefined : "waiting";
-  const questions = listQuestions(session.business.id, filter);
+  const questions = await listQuestions(session.business.id, filter);
 
   const tabs = [
     { key: "waiting", label: "Waiting" },

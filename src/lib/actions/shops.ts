@@ -26,9 +26,9 @@ export async function createShopAction(
 
   // The tag is what a customer types, so it is never silently duplicated.
   const requested = normaliseTag(String(formData.get("tag") ?? "") || name);
-  const tag = isTagTaken(requested) ? availableTag(requested) : requested;
+  const tag = (await isTagTaken(requested)) ? await availableTag(requested) : requested;
 
-  const id = createShop(session.business.id, {
+  const id = await createShop(session.business.id, {
     name,
     tag,
     about: String(formData.get("about") ?? "").trim() || null,
@@ -52,9 +52,9 @@ export async function updateShopAction(
 
   const tag = normaliseTag(String(formData.get("tag") ?? "") || name);
   if (!tag) return { error: "The shop tag can't be empty." };
-  if (isTagTaken(tag, shopId)) return { error: "That tag is taken. Try another." };
+  if (await isTagTaken(tag, shopId)) return { error: "That tag is taken. Try another." };
 
-  updateShop(session.business.id, shopId, {
+  await updateShop(session.business.id, shopId, {
     name,
     tag,
     slug: tag,
@@ -72,7 +72,7 @@ export async function deleteShopAction(formData: FormData) {
   const shopId = String(formData.get("shop_id") ?? "");
   if (!shopId) return;
 
-  deleteShop(session.business.id, shopId);
+  await deleteShop(session.business.id, shopId);
   revalidatePath("/shops");
   redirect("/shops");
 }

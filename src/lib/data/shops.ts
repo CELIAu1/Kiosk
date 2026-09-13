@@ -18,8 +18,8 @@ const CARD_SELECT = `
 `;
 
 /** The three-image collage on each shop card comes from its newest products. */
-function coverIds(shopId: string, limit = 3): string[] {
-  return all<{ image_id: string }>(
+async function coverIds(shopId: string, limit = 3): Promise<string[]> {
+  const rows = await all<{ image_id: string }>(
     `SELECT pi.image_id
        FROM products p
        JOIN product_images pi ON pi.product_id = p.id AND pi.position = 0
@@ -28,31 +28,33 @@ function coverIds(shopId: string, limit = 3): string[] {
       LIMIT ?`,
     shopId,
     limit,
-  ).map((row) => row.image_id);
+  );
+  return rows.map((row) => row.image_id);
 }
 
-function withCovers(shop: Omit<ShopCard, "cover_ids">): ShopCard {
-  return { ...shop, cover_ids: coverIds(shop.id) };
+async function withCovers(shop: Omit<ShopCard, "cover_ids">): Promise<ShopCard> {
+  return { ...shop, cover_ids: await coverIds(shop.id) };
 }
 
-export function listShops(businessId: string): ShopCard[] {
-  return all<Omit<ShopCard, "cover_ids">>(
+export async function listShops(businessId: string): Promise<ShopCard[]> {
+  const shops = await all<Omit<ShopCard, "cover_ids">>(
     `${CARD_SELECT} WHERE s.business_id = ? ORDER BY s.position, s.created_at`,
     businessId,
-  ).map(withCovers);
+  );
+  return Promise.all(shops.map(withCovers));
 }
 
-export function getShop(businessId: string, shopId: string): ShopCard | null {
-  const row = one<Omit<ShopCard, "cover_ids">>(
+export async function getShop(businessId: string, shopId: string): Promise<ShopCard | null> {
+  const row = await one<Omit<ShopCard, "cover_ids">>(
     `${CARD_SELECT} WHERE s.business_id = ? AND s.id = ?`,
     businessId,
     shopId,
   );
-  return row ? withCovers(row) : null;
+  return row ? await withCovers(row) : null;
 }
 
 /** Customer-facing lookup: a shop is reachable by its slug or its @tag. */
-export function getShopByHandle(handle: string): Shop | null {
+export async function getShopByHandle(handle: string): Promise<Shop | null> {
   const clean = handle.replace(/^@/, "");
   return one<Shop>(
     `SELECT * FROM shops WHERE slug = ? OR tag = ? COLLATE NOCASE`,
@@ -61,25 +63,25 @@ export function getShopByHandle(handle: string): Shop | null {
   );
 }
 
-export function countShops(businessId: string): number {
+export async function countShops(businessId: string): Promise<number> {
   return (
-    one<{ n: number }>(
+    (await one<{ n: number }>(
       `SELECT COUNT(*) AS n FROM shops WHERE business_id = ?`,
       businessId,
-    )?.n ?? 0
+    ))?.n ?? 0
   );
 }
 
-export function createShop(
+export async function createShop(
   businessId: string,
   input: { name: string; tag: string; about?: string | null },
-): string {
+): Promise<string> {
   const id = newId("shp");
-  const next = one<{ n: number }>(
+  const next = await one<{ n: number }>(
     `SELECT COALESCE(MAX(position), -1) + 1 AS n FROM shops WHERE business_id = ?`,
     businessId,
   );
-  run(
+  await run(
     `INSERT INTO shops
        (id, business_id, name, tag, slug, about, cover_image_id, position, created_at)
      VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
@@ -95,14 +97,14 @@ export function createShop(
   return id;
 }
 
-export function updateShop(
+export async function updateShop(
   businessId: string,
   shopId: string,
   fields: Partial<Pick<Shop, "name" | "tag" | "slug" | "about" | "cover_image_id">>,
 ) {
   const keys = Object.keys(fields) as (keyof typeof fields)[];
   if (keys.length === 0) return;
-  run(
+  await run(
     `UPDATE shops SET ${keys.map((k) => `${k} = ?`).join(", ")}
       WHERE id = ? AND business_id = ?`,
     ...keys.map((k) => fields[k] ?? null),
@@ -111,8 +113,8 @@ export function updateShop(
   );
 }
 
-export function deleteShop(businessId: string, shopId: string) {
-  run(`DELETE FROM shops WHERE id = ? AND business_id = ?`, shopId, businessId);
+export async function deleteShop(businessId: string, shopId: string) {
+  await run(`DELETE FROM shops WHERE id = ? AND business_id = ?`, shopId, businessId);
 }
 
 /**
@@ -128,8 +130,8 @@ export function normaliseTag(input: string): string {
     .slice(0, 30);
 }
 
-export function isTagTaken(tag: string, exceptShopId?: string): boolean {
-  const row = one<{ id: string }>(
+export async function isTagTaken(tag: string, exceptShopId?: string): Promise<boolean> {
+  const row = await one<{ id: string }>(
     `SELECT id FROM shops WHERE tag = ? OR slug = ?`,
     tag,
     tag,
@@ -138,11 +140,11 @@ export function isTagTaken(tag: string, exceptShopId?: string): boolean {
 }
 
 /** Finds a free tag near the one asked for, e.g. sneakers -> sneakers2. */
-export function availableTag(desired: string): string {
+export async function availableTag(desired: string): Promise<string> {
   const base = normaliseTag(desired) || "shop";
   for (let n = 0; n < 60; n++) {
     const candidate = n === 0 ? base : `${base}${n + 1}`;
-    if (!isTagTaken(candidate)) return candidate;
+    if (!(await isTagTaken(candidate))) return candidate;
   }
   return `${base}${Date.now().toString(36)}`;
 }
