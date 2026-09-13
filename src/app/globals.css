@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/*
+  KIOSK design tokens.
+  Direction: editorial, commerce-first, confident, calm.
+  Deliberately avoided: gradients, glassmorphism, SaaS blue/purple,
+  heavy shadows, uniformly pill-rounded cards. Structure comes from
+  hairline rules, type scale and whitespace — not from floating cards.
+*/
+@theme {
+  /* Surfaces — warm paper, so product photography reads as the colour. */
+  --color-paper: #fbfaf7;
+  --color-surface: #ffffff;
+  --color-sunk: #f4f2ec;
+
+  /* Ink */
+  --color-ink: #1a1917;
+  --color-ink-soft: #55534c;
+  --color-ink-muted: #8a877d;
+
+  /* Hairlines */
+  --color-line: #e4e1d8;
+  --color-line-strong: #cdc9bc;
+
+  /* Signals — used sparingly, only to mean something. */
+  --color-ember: #b8431a; /* needs attention */
+  --color-ember-soft: #fbeee8;
+  --color-grow: #1f6b4a; /* money in, positive */
+  --color-grow-soft: #e9f2ed;
+  --color-flag: #8a6d1f; /* waiting / low stock */
+  --color-flag-soft: #f8f1dd;
+
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Editorial headings: tight, dense, not shouty. */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.018em;
+    text-wrap: balance;
+  }
+
+  /* Numbers should line up wherever we show money or counts. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* The one label style used across the app for small caps section marks. */
+  .eyebrow {
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+}
+
+/* Hide scrollbars on horizontal rails without losing scrollability. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

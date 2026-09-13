@@ -1,0 +1,145 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { getBusinessBySlug } from "@/lib/data/business";
+import { getOption, getProduct, isOrderable } from "@/lib/data/products";
+import { addToCart, clearCart, listCart, setCartQty } from "@/lib/data/cart";
+import { findOrCreateCustomer, touchCustomer } from "@/lib/data/customers";
+import { askQuestion } from "@/lib/data/questions";
+import { placeOrder } from "@/lib/data/orders";
+import { recordInterest } from "@/lib/data/interest";
+import { getVisitorId, linkVisitorToCustomer } from "@/lib/visitor";
+
+export type StorefrontState = { error?: string } | null;
+
+export async function addToCartAction(formData: FormData) {
+  const slug = String(formData.get("slug") ?? "");
+  const business = getBusinessBySlug(slug);
+  if (!business) return;
+
+  const productId = String(formData.get("product_id") ?? "");
+  const product = getProduct(business.id, productId);
+  if (!product || !isOrderable(product)) return;
+
+  const optionId = String(formData.get("option_id") ?? "") || null;
+  // Guard against a stale form posting an option from another product.
+  const option = optionId ? getOption(optionId) : null;
+  const safeOptionId = option?.product_id === productId ? option.id : null;
+
+  const visitorId = await getVisitorId(business.id);
+  if (!visitorId) return;
+
+  addToCart({
+    visitorId,
+    businessId: business.id,
+    productId,
+    optionId: safeOptionId,
+    qty: Number(formData.get("qty") ?? 1) || 1,
+  });
+  recordInterest(business.id, "added_to_cart", { productId, visitorId });
+
+  revalidatePath(`/s/${slug}`, "layout");
+  redirect(`/s/${slug}/cart`);
+}
+
+export async function setCartQtyAction(formData: FormData) {
+  const slug = String(formData.get("slug") ?? "");
+  const business = getBusinessBySlug(slug);
+  if (!business) return;
+
+  const visitorId = await getVisitorId(business.id);
+  if (!visitorId) return;
+
+  setCartQty(
+    visitorId,
+    String(formData.get("line_id") ?? ""),
+    Number(formData.get("qty") ?? 0),
+  );
+  revalidatePath(`/s/${slug}`, "layout");
+}
+
+export async function askQuestionAction(
+  _prev: StorefrontState,
+  formData: FormData,
+): Promise<StorefrontState> {
+  const slug = String(formData.get("slug") ?? "");
+  const business = getBusinessBySlug(slug);
+  if (!business) return { error: "This shop is no longer available." };
+
+  const body = String(formData.get("body") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+
+  if (!body) return { error: "Type your question first." };
+  if (!name) return { error: "Add your name so they know who's asking." };
+  if (!phone) return { error: "Add a number so they can reply to you." };
+
+  const productId = String(formData.get("product_id") ?? "") || null;
+  const visitorId = await getVisitorId(business.id);
+
+  const customer = findOrCreateCustomer(business.id, { name, phone });
+  if (visitorId) linkVisitorToCustomer(visitorId, customer.id);
+
+  askQuestion({
+    businessId: business.id,
+    productId,
+    customerId: customer.id,
+    visitorId,
+    body,
+  });
+
+  revalidatePath(`/s/${slug}`, "layout");
+  redirect(`/s/${slug}${productId ? `/p/${productId}` : ""}?asked=1`);
+}
+
+export async function placeOrderAction(
+  _prev: StorefrontState,
+  formData: FormData,
+): Promise<StorefrontState> {
+  const slug = String(formData.get("slug") ?? "");
+  const business = getBusinessBySlug(slug);
+  if (!business) return { error: "This shop is no longer available." };
+
+  const name = String(formData.get("name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  if (!name) return { error: "Add your name." };
+  if (!phone) return { error: "Add a phone number so they can confirm your order." };
+
+  const visitorId = await getVisitorId(business.id);
+  if (!visitorId) return { error: "Your basket expired. Add your items again." };
+
+  const lines = listCart(visitorId, business.id);
+  if (lines.length === 0) return { error: "Your basket is empty." };
+
+  // Re-check availability at the moment of ordering, not when the page rendered.
+  const unavailable = lines.filter((line) => {
+    const product = getProduct(business.id, line.product_id);
+    return !product || !isOrderable(product);
+  });
+  if (unavailable.length > 0) {
+    return {
+      error: `${unavailable[0].name} isn't available any more. Remove it to continue.`,
+    };
+  }
+
+  const customer = findOrCreateCustomer(business.id, {
+    name,
+    phone,
+    instagram: String(formData.get("instagram") ?? "").trim() || null,
+  });
+  linkVisitorToCustomer(visitorId, customer.id);
+  touchCustomer(customer.id);
+
+  const order = placeOrder({
+    businessId: business.id,
+    customerId: customer.id,
+    visitorId,
+    lines,
+    note: String(formData.get("note") ?? "").trim() || null,
+  });
+
+  clearCart(visitorId, business.id);
+  revalidatePath(`/s/${slug}`, "layout");
+  redirect(`/s/${slug}/order/${order.id}`);
+}
