@@ -9,7 +9,7 @@ import { timeAgo } from "@/lib/time";
 import { whatsappLink } from "@/lib/url";
 import { PageBody, PageHeader } from "@/components/PageHeader";
 import { OrderItemRow, RowList } from "@/components/rows";
-import { Button, Panel, SectionHeading, Stat, Textarea } from "@/components/ui";
+import { Button, Card, SectionHeading, Stat, Textarea } from "@/components/ui";
 import { WhatsAppIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -52,13 +52,12 @@ export default async function CustomerPage({
         back={{ href: "/customers", label: "Customers" }}
       />
       <PageBody>
-        <Panel className="p-5">
+        <Card className="p-5">
           <div className="grid grid-cols-3 gap-y-6">
             <Stat value={customer.order_count} label="orders" />
             <Stat
               value={formatMoney(customer.spent_minor, business.currency)}
               label="spent"
-              tone={customer.spent_minor > 0 ? "grow" : undefined}
             />
             <Stat value={customer.question_count} label="questions" />
           </div>
@@ -70,14 +69,14 @@ export default async function CustomerPage({
                 href={message}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-9 items-center gap-2 rounded-sm bg-ink px-3 text-[13px] font-medium text-paper hover:bg-ink-soft"
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-ink px-3 text-[13px] font-medium text-white hover:bg-ink-soft"
               >
                 <WhatsAppIcon className="h-4 w-4" />
                 Message
               </a>
             )}
           </div>
-        </Panel>
+        </Card>
 
         <section>
           <SectionHeading title="Note to self" note="Only you can see this." />
@@ -89,7 +88,7 @@ export default async function CustomerPage({
               defaultValue={customer.note ?? ""}
               placeholder="Prefers pickup. Asked about size 43 restock."
             />
-            <Button type="submit" tone="secondary" size="sm">
+            <Button type="submit" tone="soft" size="sm">
               Save note
             </Button>
           </form>

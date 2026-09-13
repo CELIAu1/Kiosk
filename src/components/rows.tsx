@@ -34,7 +34,7 @@ export function Row({
 
 export function RowList({ children }: { children: React.ReactNode }) {
   return (
-    <div className="divide-y divide-line border border-line bg-surface">{children}</div>
+    <div className="divide-y divide-line-warm overflow-hidden rounded-panel bg-surface shadow-soft">{children}</div>
   );
 }
 
@@ -88,7 +88,7 @@ export function QuestionItem({
               href={reply}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-8 items-center gap-1.5 rounded-sm bg-ink px-2.5 text-[13px] font-medium text-paper hover:bg-ink-soft"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-brand px-3 text-[13px] font-semibold text-white hover:bg-brand-nav"
             >
               <WhatsAppIcon className="h-3.5 w-3.5" />
               Reply on WhatsApp
@@ -104,13 +104,13 @@ export function QuestionItem({
               <input type="hidden" name="answered" value="true" />
               <button
                 type="submit"
-                className="h-8 rounded-sm border border-line-strong px-2.5 text-[13px] text-ink-soft hover:bg-sunk"
+                className="h-8 rounded-full bg-sunk px-3 text-[13px] font-medium text-ink-soft hover:brightness-95"
               >
                 Mark answered
               </button>
             </form>
           ) : (
-            <Badge tone="grow">Answered</Badge>
+            <Badge tone="good">Answered</Badge>
           )}
         </div>
       </div>
@@ -120,10 +120,10 @@ export function QuestionItem({
 
 /* ------------------------------------------------------------------- orders */
 
-const STATUS_TONE: Record<OrderStatus, "ember" | "flag" | "grow" | "neutral"> = {
-  new: "ember",
-  confirmed: "flag",
-  completed: "grow",
+const STATUS_TONE: Record<OrderStatus, "brand" | "warn" | "good" | "neutral"> = {
+  new: "brand",
+  confirmed: "warn",
+  completed: "good",
   cancelled: "neutral",
 };
 

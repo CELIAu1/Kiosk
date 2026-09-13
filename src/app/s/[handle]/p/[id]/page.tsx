@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getBusinessBySlug } from "@/lib/data/business";
+import { getShopByHandle } from "@/lib/data/shops";
+import { getBusinessById } from "@/lib/data/business";
 import {
   getProduct,
   isOrderable,
@@ -22,15 +23,15 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string; id: string }>;
+  params: Promise<{ handle: string; id: string }>;
 }) {
-  const { slug, id } = await params;
-  const business = getBusinessBySlug(slug);
-  if (!business) return { title: "Product" };
-  const product = getProduct(business.id, id);
+  const { handle, id } = await params;
+  const shop = getShopByHandle(handle);
+  if (!shop) return { title: "Product" };
+  const product = getProduct(shop.business_id, id);
   if (!product) return { title: "Product" };
   return {
-    title: { absolute: `${product.name} · ${business.name}` },
+    title: { absolute: `${product.name} · ${shop.name}` },
     description: product.description ?? undefined,
     openGraph: {
       title: product.name,
@@ -46,22 +47,24 @@ export default async function StorefrontProductPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ slug: string; id: string }>;
+  params: Promise<{ handle: string; id: string }>;
   searchParams: Promise<{ asked?: string }>;
 }) {
-  const { slug, id } = await params;
+  const { handle, id } = await params;
   const { asked } = await searchParams;
 
-  const business = getBusinessBySlug(slug);
+  const shop = getShopByHandle(handle);
+  if (!shop) notFound();
+  const business = getBusinessById(shop.business_id);
   if (!business) notFound();
 
-  const product = getProduct(business.id, id);
+  const product = getProduct(shop.business_id, id);
   // Hidden products are not 404s for the owner's preview link, but customers
   // arriving at one should simply not see it.
-  if (!product || product.status === "hidden") notFound();
+  if (!product || product.shop_id !== shop.id || product.status === "hidden") notFound();
 
   const visitorId = await getVisitorId(business.id);
-  if (visitorId) recordProductView(business.id, product.id, visitorId);
+  if (visitorId) recordProductView(shop.business_id, shop.id, product.id, visitorId);
 
   const images = listProductImages(product.id);
   const options = listProductOptions(product.id);
@@ -70,13 +73,13 @@ export default async function StorefrontProductPage({
 
   const whatsapp = whatsappLink(
     business.whatsapp,
-    `Hi ${business.name}, I'm interested in the ${product.name}.`,
+    `Hi ${shop.name}, I'm interested in the ${product.name}.`,
   );
 
   return (
     <article className="py-4">
       <Link
-        href={`/s/${slug}`}
+        href={`/s/${handle}`}
         className="inline-flex items-center gap-1.5 text-[13px] text-ink-muted hover:text-ink"
       >
         <ArrowLeftIcon className="h-4 w-4" />
@@ -127,9 +130,9 @@ export default async function StorefrontProductPage({
               )}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              {!orderable && <Badge tone="flag">Sold out</Badge>}
+              {!orderable && <Badge tone="warn">Sold out</Badge>}
               {orderable && lowStock && (
-                <Badge tone="ember">Only {product.stock} left</Badge>
+                <Badge tone="brand">Only {product.stock} left</Badge>
               )}
             </div>
           </div>
@@ -142,7 +145,7 @@ export default async function StorefrontProductPage({
 
           {orderable ? (
             <form action={addToCartAction} className="space-y-4">
-              <input type="hidden" name="slug" value={slug} />
+              <input type="hidden" name="handle" value={handle} />
               <input type="hidden" name="product_id" value={product.id} />
 
               {options.length > 0 && (
@@ -152,7 +155,7 @@ export default async function StorefrontProductPage({
                     {options.map((option) => (
                       <label
                         key={option.id}
-                        className="cursor-pointer rounded-sm border border-line-strong px-3 py-2 text-[14px] has-checked:border-ink has-checked:bg-ink has-checked:text-paper"
+                        className="cursor-pointer rounded-full border border-line px-4 py-2 text-[13px] font-medium has-checked:border-brand has-checked:bg-brand has-checked:text-white"
                       >
                         <input
                           type="radio"
@@ -173,19 +176,19 @@ export default async function StorefrontProductPage({
               </Button>
             </form>
           ) : (
-            <div className="border border-line bg-surface p-4">
+            <div className="rounded-card bg-sunk p-4">
               <p className="text-[14px] font-medium">This one is sold out</p>
               <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
-                Ask {business.name} whether it&rsquo;s coming back — they&rsquo;ll see
+                Ask {shop.name} whether it&rsquo;s coming back — they&rsquo;ll see
                 that you were looking for it.
               </p>
             </div>
           )}
 
           <AskForm
-            slug={slug}
+            handle={handle}
             productId={product.id}
-            businessName={business.name}
+            businessName={shop.name}
             asked={asked === "1"}
           />
 
@@ -194,7 +197,7 @@ export default async function StorefrontProductPage({
               href={whatsapp}
               target="_blank"
               rel="noreferrer"
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-sm border border-line-strong text-[14px] font-medium hover:bg-sunk"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-sunk text-[14px] font-semibold hover:brightness-95"
             >
               <WhatsAppIcon className="h-4 w-4" />
               Chat on WhatsApp instead

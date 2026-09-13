@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS businesses (
   location       TEXT,
   currency       TEXT NOT NULL DEFAULT 'NGN',
   logo_image_id  TEXT,
+  -- The account-level handle shown under "Welcome <name>!" on Home.
+  handle         TEXT NOT NULL UNIQUE,
   created_at     TEXT NOT NULL
 );
 
@@ -52,17 +54,35 @@ CREATE TABLE IF NOT EXISTS images (
   created_at TEXT NOT NULL
 );
 
+-- A business runs one shop per thing it sells ("Sneakers", "Thrift by Pemz").
+-- Each shop is separately shareable and has its own tag, categories and products.
+CREATE TABLE IF NOT EXISTS shops (
+  id             TEXT PRIMARY KEY,
+  business_id    TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  name           TEXT NOT NULL,
+  -- The @tag a customer can use to open this shop. The share mechanic.
+  tag            TEXT NOT NULL UNIQUE,
+  slug           TEXT NOT NULL UNIQUE,
+  about          TEXT,
+  cover_image_id TEXT,
+  position       INTEGER NOT NULL DEFAULT 0,
+  created_at     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_shops_business ON shops(business_id, position);
+
 CREATE TABLE IF NOT EXISTS categories (
   id          TEXT PRIMARY KEY,
   business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  shop_id     TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
   position    INTEGER NOT NULL DEFAULT 0
 );
-CREATE INDEX IF NOT EXISTS idx_categories_business ON categories(business_id);
+CREATE INDEX IF NOT EXISTS idx_categories_shop ON categories(shop_id, position);
 
 CREATE TABLE IF NOT EXISTS products (
   id               TEXT PRIMARY KEY,
   business_id      TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  shop_id          TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
   category_id      TEXT REFERENCES categories(id) ON DELETE SET NULL,
   name             TEXT NOT NULL,
   description      TEXT,
@@ -76,6 +96,7 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at       TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_products_business ON products(business_id, status);
+CREATE INDEX IF NOT EXISTS idx_products_shop ON products(shop_id, status);
 
 CREATE TABLE IF NOT EXISTS product_images (
   id         TEXT PRIMARY KEY,
@@ -128,6 +149,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_visitors_device
 CREATE TABLE IF NOT EXISTS interest_events (
   id          TEXT PRIMARY KEY,
   business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  shop_id     TEXT REFERENCES shops(id) ON DELETE CASCADE,
   product_id  TEXT REFERENCES products(id) ON DELETE CASCADE,
   visitor_id  TEXT,
   customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL,
@@ -137,6 +159,7 @@ CREATE TABLE IF NOT EXISTS interest_events (
 );
 CREATE INDEX IF NOT EXISTS idx_interest_business ON interest_events(business_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_interest_product ON interest_events(product_id, kind);
+CREATE INDEX IF NOT EXISTS idx_interest_shop ON interest_events(shop_id, kind, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS questions (
   id          TEXT PRIMARY KEY,
@@ -154,6 +177,7 @@ CREATE TABLE IF NOT EXISTS cart_items (
   id          TEXT PRIMARY KEY,
   visitor_id  TEXT NOT NULL,
   business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  shop_id     TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
   product_id  TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   option_id   TEXT REFERENCES product_options(id) ON DELETE SET NULL,
   qty         INTEGER NOT NULL DEFAULT 1,
@@ -164,6 +188,7 @@ CREATE INDEX IF NOT EXISTS idx_cart_visitor ON cart_items(visitor_id);
 CREATE TABLE IF NOT EXISTS orders (
   id          TEXT PRIMARY KEY,
   business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  shop_id     TEXT REFERENCES shops(id) ON DELETE SET NULL,
   customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
   reference   TEXT NOT NULL,
   -- new | confirmed | completed | cancelled

@@ -7,68 +7,116 @@ export function cx(...parts: (string | false | null | undefined)[]) {
 
 /* ------------------------------------------------------------------ buttons */
 
-type ButtonTone = "primary" | "secondary" | "quiet" | "danger";
+/**
+ * Button tones, straight from the Figma file:
+ *   brand   — #007aff pill, the primary action ("Share", "Continue")
+ *   dark    — black pill ("Login", active filter chip)
+ *   soft    — #f6f6f6 pill with dark text ("Customer view")
+ *   dashed  — #e0f2ff with a dashed #1575e2 edge ("Add a Shop")
+ *   quiet   — text only
+ */
+type Tone = "brand" | "dark" | "soft" | "dashed" | "quiet" | "danger";
 
-const BUTTON_BASE =
-  "inline-flex items-center justify-center gap-2 rounded-sm text-[14px] font-medium " +
-  "transition-colors disabled:opacity-40 disabled:pointer-events-none select-none";
+const BASE =
+  "inline-flex items-center justify-center gap-2 rounded-full text-[14px] font-semibold " +
+  "transition-colors select-none disabled:pointer-events-none";
 
-const BUTTON_SIZE = {
-  sm: "h-8 px-3",
-  md: "h-11 px-4",
-  lg: "h-12 px-5 text-[15px]",
+const SIZE = {
+  sm: "h-9 px-3.5 text-[13px]",
+  md: "h-11 px-5",
+  lg: "h-[52px] px-6 text-[15px]",
 } as const;
 
-const BUTTON_TONE: Record<ButtonTone, string> = {
-  primary: "bg-ink text-paper hover:bg-ink-soft",
-  secondary: "border border-line-strong bg-surface text-ink hover:bg-sunk",
+const TONE: Record<Tone, string> = {
+  brand: "bg-brand text-white hover:bg-brand-nav disabled:bg-brand-disabled",
+  dark: "bg-black text-white hover:bg-ink disabled:opacity-40",
+  soft: "bg-sunk text-ink hover:bg-line-soft disabled:opacity-40",
+  dashed:
+    "bg-brand-tint text-ink border border-dashed border-brand-edge hover:bg-brand-tint-soft",
   quiet: "text-ink-soft hover:text-ink hover:bg-sunk",
-  danger: "border border-line-strong bg-surface text-ember hover:bg-ember-soft",
+  danger: "bg-bad-tint text-bad hover:brightness-95",
 };
 
-type ButtonProps = ComponentProps<"button"> & {
-  tone?: ButtonTone;
-  size?: keyof typeof BUTTON_SIZE;
+type BtnProps = ComponentProps<"button"> & { tone?: Tone; size?: keyof typeof SIZE };
+
+export function Button({ tone = "brand", size = "md", className, ...rest }: BtnProps) {
+  return <button {...rest} className={cx(BASE, SIZE[size], TONE[tone], className)} />;
+}
+
+type BtnLinkProps = ComponentProps<typeof Link> & {
+  tone?: Tone;
+  size?: keyof typeof SIZE;
 };
 
-export function Button({
-  tone = "primary",
+export function ButtonLink({
+  tone = "brand",
   size = "md",
   className,
   ...rest
-}: ButtonProps) {
+}: BtnLinkProps) {
+  return <Link {...rest} className={cx(BASE, SIZE[size], TONE[tone], className)} />;
+}
+
+/**
+ * Square icon-only controls. Kept separate from Button because Button carries
+ * horizontal padding, which on a fixed-width square leaves the glyph no room.
+ */
+const ICON_BTN =
+  "inline-flex items-center justify-center rounded-full transition-colors";
+
+const ICON_TONE = {
+  soft: "bg-sunk text-ink hover:bg-line-soft",
+  dark: "bg-black text-white hover:bg-ink",
+  brand: "bg-brand text-white hover:bg-brand-nav",
+  ghost: "bg-white/10 text-white hover:bg-white/20",
+} as const;
+
+type IconTone = keyof typeof ICON_TONE;
+
+export function IconButton({
+  className,
+  tone = "soft",
+  size = 36,
+  ...rest
+}: ComponentProps<"button"> & { tone?: IconTone; size?: number }) {
   return (
     <button
       {...rest}
-      className={cx(BUTTON_BASE, BUTTON_SIZE[size], BUTTON_TONE[tone], className)}
+      style={{ width: size, height: size, ...rest.style }}
+      className={cx(ICON_BTN, ICON_TONE[tone], className)}
     />
   );
 }
 
-type ButtonLinkProps = ComponentProps<typeof Link> & {
-  tone?: ButtonTone;
-  size?: keyof typeof BUTTON_SIZE;
-};
-
-export function ButtonLink({
-  tone = "primary",
-  size = "md",
+export function IconLink({
   className,
+  tone = "soft",
+  size = 36,
   ...rest
-}: ButtonLinkProps) {
+}: ComponentProps<typeof Link> & { tone?: IconTone; size?: number }) {
   return (
     <Link
       {...rest}
-      className={cx(BUTTON_BASE, BUTTON_SIZE[size], BUTTON_TONE[tone], className)}
+      style={{ width: size, height: size, ...rest.style }}
+      className={cx(ICON_BTN, ICON_TONE[tone], className)}
     />
+  );
+}
+
+/** "See all" / "Manage …" — the blue text link used beside section titles. */
+export function SeeAll({ href, children = "See all" }: { href: string; children?: ReactNode }) {
+  return (
+    <Link href={href} className="text-[12px] font-semibold text-brand-link hover:underline">
+      {children}
+    </Link>
   );
 }
 
 /* ------------------------------------------------------------------- inputs */
 
 const FIELD =
-  "w-full rounded-sm border border-line-strong bg-surface px-3 py-2.5 text-[15px] " +
-  "text-ink placeholder:text-ink-muted focus:border-ink focus:outline-none";
+  "w-full rounded-[8px] border-[0.5px] border-line bg-sunk px-4 py-3 text-[14px] " +
+  "text-ink placeholder:text-ink-faint focus:border-brand focus:outline-none";
 
 export function Input({ className, ...rest }: ComponentProps<"input">) {
   return <input {...rest} className={cx(FIELD, className)} />;
@@ -96,27 +144,54 @@ export function Field({
   return (
     <label className="block">
       <span className="mb-1.5 flex items-baseline justify-between gap-2">
-        <span className="text-[13px] font-medium text-ink">{label}</span>
-        {optional && <span className="text-[12px] text-ink-muted">Optional</span>}
+        <span className="text-[12px] font-medium text-ink-muted">{label}</span>
+        {optional && <span className="text-[12px] text-ink-faint">Optional</span>}
       </span>
       {children}
-      {hint && <span className="mt-1.5 block text-[12px] text-ink-muted">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-[12px] text-ink-soft">{hint}</span>}
     </label>
   );
 }
 
-/* ------------------------------------------------------------------ surfaces */
+/* ----------------------------------------------------------------- surfaces */
 
-/** A plain bordered panel. Used instead of shadowed floating cards. */
-export function Panel({
+/** White card with the design's elevation. */
+export function Card({
   className,
   children,
+  radius = "card",
 }: {
   className?: string;
   children: ReactNode;
+  radius?: "card" | "panel" | "tile";
+}) {
+  const r =
+    radius === "tile" ? "rounded-tile" : radius === "panel" ? "rounded-panel" : "rounded-card";
+  return (
+    <div className={cx("bg-surface shadow-card", r, className)}>{children}</div>
+  );
+}
+
+/** Grey inset block — stat cards, the interest list container. */
+export function Sunk({
+  className,
+  children,
+  radius = "card",
+}: {
+  className?: string;
+  children: ReactNode;
+  radius?: "card" | "panel";
 }) {
   return (
-    <div className={cx("border border-line bg-surface", className)}>{children}</div>
+    <div
+      className={cx(
+        "border-[0.5px] border-line-soft bg-sunk",
+        radius === "panel" ? "rounded-panel" : "rounded-card",
+        className,
+      )}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -130,10 +205,10 @@ export function SectionHeading({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-4">
-      <div>
-        <h2 className="text-[17px] font-semibold text-ink">{title}</h2>
-        {note && <p className="mt-0.5 text-[13px] text-ink-muted">{note}</p>}
+    <div className="mb-3 flex items-center justify-between gap-4">
+      <div className="min-w-0">
+        <h2 className="truncate text-[14px] font-semibold text-ink">{title}</h2>
+        {note && <p className="mt-0.5 text-[12px] text-ink-soft">{note}</p>}
       </div>
       {action}
     </div>
@@ -150,25 +225,55 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="border border-dashed border-line-strong px-6 py-10 text-center">
-      <p className="text-[15px] font-medium text-ink">{title}</p>
-      <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-ink-soft">
+    <div className="px-6 py-10 text-center">
+      <p className="text-[14px] font-semibold text-ink">{title}</p>
+      <p className="mx-auto mt-1.5 max-w-xs text-[12px] leading-relaxed text-ink-soft">
         {body}
       </p>
-      {action && <div className="mt-4 flex justify-center">{action}</div>}
+      {action && <div className="mt-5 flex justify-center">{action}</div>}
     </div>
   );
 }
 
-/* -------------------------------------------------------------------- badges */
+/* -------------------------------------------------------------------- chips */
 
-type BadgeTone = "neutral" | "ember" | "grow" | "flag";
+/** Rounded filter chip. Active is blue in catalogues, black in the price book. */
+export function Chip({
+  href,
+  active,
+  activeTone = "brand",
+  children,
+}: {
+  href: string;
+  active: boolean;
+  activeTone?: "brand" | "dark";
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cx(
+        "shrink-0 rounded-full px-3.5 py-2 text-[12px] font-medium whitespace-nowrap",
+        active
+          ? activeTone === "dark"
+            ? "bg-black text-white"
+            : "bg-brand text-white"
+          : "bg-sunk text-ink hover:bg-line-soft",
+      )}
+    >
+      {children}
+    </Link>
+  );
+}
 
-const BADGE_TONE: Record<BadgeTone, string> = {
+type BadgeTone = "neutral" | "brand" | "good" | "warn" | "bad";
+
+const BADGE: Record<BadgeTone, string> = {
   neutral: "bg-sunk text-ink-soft",
-  ember: "bg-ember-soft text-ember",
-  grow: "bg-grow-soft text-grow",
-  flag: "bg-flag-soft text-flag",
+  brand: "bg-brand-tint text-brand",
+  good: "bg-good-tint text-good",
+  warn: "bg-warn-tint text-warn",
+  bad: "bg-bad-tint text-bad",
 };
 
 export function Badge({
@@ -181,8 +286,8 @@ export function Badge({
   return (
     <span
       className={cx(
-        "inline-flex items-center rounded-xs px-1.5 py-0.5 text-[11px] font-medium",
-        BADGE_TONE[tone],
+        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
+        BADGE[tone],
       )}
     >
       {children}
@@ -190,29 +295,47 @@ export function Badge({
   );
 }
 
-/** A count with its label, e.g. "12 looked". The unit of the interest story. */
+/** The circular monogram used for people and shops without a photo. */
+export function Monogram({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cx(
+        "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-tint text-[12px] font-bold text-brand",
+        className,
+      )}
+    >
+      {name.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+/** Stat card from "Statistics over the past 7 days". */
 export function Stat({
   value,
   label,
-  tone,
+  icon,
 }: {
   value: string | number;
   label: string;
-  tone?: "ember" | "grow";
+  icon?: ReactNode;
 }) {
   return (
-    <div>
-      <div
-        className={cx(
-          "tabular text-[22px] leading-none font-semibold",
-          tone === "ember" && "text-ember",
-          tone === "grow" && "text-grow",
-          !tone && "text-ink",
-        )}
-      >
-        {value}
-      </div>
-      <div className="mt-1 text-[12px] text-ink-muted">{label}</div>
-    </div>
+    <Sunk className="flex min-w-0 flex-1 flex-col justify-center gap-4 px-2.5 py-3">
+      {icon && <span className="text-ink">{icon}</span>}
+      <span className="min-w-0">
+        <span className="num block truncate text-[14px] font-semibold text-black">
+          {value}
+        </span>
+        <span className="num mt-1 block text-[10px] leading-tight font-medium text-ink-muted">
+          {label}
+        </span>
+      </span>
+    </Sunk>
   );
 }

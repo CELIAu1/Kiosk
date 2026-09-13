@@ -47,16 +47,19 @@ export async function signUpAction(
   const now = new Date().toISOString();
 
   tx(() => {
+    const slug = availableSlug(businessName);
     run(
       `INSERT INTO businesses
          (id, name, slug, tagline, owner_name, whatsapp, instagram, tiktok,
-          location, currency, logo_image_id, created_at)
-       VALUES (?, ?, ?, NULL, ?, ?, NULL, NULL, NULL, 'NGN', NULL, ?)`,
+          location, currency, logo_image_id, handle, created_at)
+       VALUES (?, ?, ?, NULL, ?, ?, NULL, NULL, NULL, 'NGN', NULL, ?, ?)`,
       businessId,
       businessName,
-      availableSlug(businessName),
+      slug,
       ownerName || null,
       whatsapp || null,
+      // The account handle a customer sees under the welcome line.
+      `shoop.${slug.replace(/-/g, "")}`.slice(0, 40),
       now,
     );
     run(

@@ -20,10 +20,13 @@ export type ProductFormValues = {
 export function ProductForm({
   currency,
   categories,
+  shopId,
   existing,
 }: {
   currency: string;
   categories: string[];
+  /** Products always belong to exactly one shop. */
+  shopId: string;
   existing?: ProductFormValues;
 }) {
   const action = existing ? updateProductAction : createProductAction;
@@ -37,6 +40,7 @@ export function ProductForm({
 
   return (
     <form action={formAction} className="space-y-6">
+      <input type="hidden" name="shop_id" value={shopId} />
       {existing && (
         <input type="hidden" name="product_id" value={existing.product.id} />
       )}
@@ -48,7 +52,7 @@ export function ProductForm({
             name="images"
             accept="image/*"
             multiple
-            className="block w-full text-[13px] text-ink-soft file:mr-3 file:rounded-sm file:border file:border-line-strong file:bg-surface file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-ink"
+            className="block w-full text-[13px] text-ink-soft file:mr-3 file:rounded-full file:border file:border-line file:bg-surface file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-ink"
           />
         </Field>
 
@@ -59,7 +63,7 @@ export function ProductForm({
                 <img
                   src={`/api/images/${imageId}`}
                   alt=""
-                  className="aspect-square w-20 border border-line object-cover"
+                  className="aspect-square w-20 rounded-[8px] border border-line object-cover"
                 />
                 <span className="mt-1 flex items-center gap-1 text-[11px] text-ink-muted">
                   <input type="checkbox" name="remove_image" value={imageId} />
@@ -178,7 +182,7 @@ export function ProductForm({
       </div>
 
       {state?.error && (
-        <p role="alert" className="text-[13px] text-ember">
+        <p role="alert" className="text-[13px] text-bad">
           {state.error}
         </p>
       )}

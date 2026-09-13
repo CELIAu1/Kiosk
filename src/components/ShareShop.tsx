@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, cx } from "./ui";
+import { Button, IconButton, cx } from "./ui";
 import { CheckIcon, ShareIcon } from "./icons";
 
 /**
@@ -10,13 +10,16 @@ import { CheckIcon, ShareIcon } from "./icons";
  */
 export function ShareShop({
   url,
-  label = "Share shop",
-  tone = "secondary",
+  label = "Share",
+  tone = "brand",
+  iconOnly = false,
   className,
 }: {
   url: string;
   label?: string;
-  tone?: "primary" | "secondary";
+  tone?: "brand" | "soft" | "dark";
+  /** Renders a square icon control instead of a labelled pill. */
+  iconOnly?: boolean;
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -39,10 +42,23 @@ export function ShareShop({
     }
   }
 
+  if (iconOnly) {
+    return (
+      <IconButton
+        tone={tone}
+        onClick={share}
+        aria-label={copied ? "Link copied" : "Share"}
+        className={className}
+      >
+        {copied ? <CheckIcon className="h-4 w-4" /> : <ShareIcon className="h-4 w-4" />}
+      </IconButton>
+    );
+  }
+
   return (
     <Button tone={tone} onClick={share} className={cx(className)}>
       {copied ? <CheckIcon className="h-4 w-4" /> : <ShareIcon className="h-4 w-4" />}
-      {copied ? "Link copied" : label}
+      {copied ? "Copied" : label}
     </Button>
   );
 }
@@ -50,7 +66,7 @@ export function ShareShop({
 export function CopyField({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="flex items-stretch border border-line-strong bg-surface">
+    <div className="flex items-stretch overflow-hidden rounded-[8px] border-[0.5px] border-line bg-sunk">
       <span className="flex-1 truncate px-3 py-2.5 text-[14px] text-ink-soft">
         {value.replace(/^https?:\/\//, "")}
       </span>
@@ -65,7 +81,7 @@ export function CopyField({ value }: { value: string }) {
             window.prompt("Copy your shop link", value);
           }
         }}
-        className="border-l border-line-strong px-3 text-[13px] font-medium text-ink hover:bg-sunk"
+        className="border-l border-line px-4 text-[13px] font-semibold text-brand hover:bg-brand-tint"
       >
         {copied ? "Copied" : "Copy"}
       </button>

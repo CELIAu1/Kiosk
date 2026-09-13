@@ -22,8 +22,8 @@ Then open <http://localhost:3000>.
 
 | | |
 |---|---|
-| Demo shop (customer view) | `/s/adas-sneaker-corner` |
 | Owner sign-in | `ada@example.com` / `kiosk1234` |
+| Demo shops (customer view) | `/s/thriftbypemz` · `/s/adassneakers` |
 
 Other commands:
 
@@ -46,11 +46,13 @@ Everything in this MVP exists to serve one loop. Anything that didn't strengthen
 left out.
 
 ```
-owner adds a product
+owner creates a shop — one per thing they sell
         ↓
-shares one link (bio, status, DM)
+adds products to it
         ↓
-customer browses the shop
+puts the shop's @tag in a bio, a status, a DM
+        ↓
+customer taps the tag and browses that shop
         ↓
 customer shows interest — looks, asks, adds to an order
         ↓
@@ -61,25 +63,52 @@ customer orders
 owner confirms and follows up, in WhatsApp where the customer already is
 ```
 
+## Built from the designs
+
+The screens follow the Figma file (`IiBjPQVrRnqC0A4Hf5eeHr`): Home, My shops, shop
+catalogue, Price book, Interest, Profile, the onboarding carousel and the shop-creation
+wizard. Colour, type, radii and elevation are taken from that file rather than invented —
+`#007aff` primary, fully-rounded pills, white cards on light grey, DM Sans for the
+interface and Montserrat for stat numerals.
+
+Two deliberate departures, both noted here so they're easy to challenge:
+
+- **"Guides & Links" is not built.** That section of the Figma home screen contains
+  placeholder content from a different product ("How to Invest on Cluster", a "Finance"
+  tag). There is no KIOSK meaning to implement.
+- **Orders, customers and questions exist but are off the bottom bar.** The designs show
+  no ordering flow, while the written brief asks for one (§7, §14). Rather than drop
+  either, the four designed tabs stay exactly as drawn and those screens are reached from
+  Home and from Profile → Account.
+
 ---
 
 ## Product decisions worth knowing about
 
-### Interest is not a page. It's information attached to products and people.
+### Interest is both a tab and a thread through the app.
 
 The most valuable idea in KIOSK is that *customer interest should become useful business
 information* — 30 people looking and 2 buying tells you something; 15 people asking the
 same question tells you something.
 
-The obvious move is an "Insights" or "Interest" tab. That would be wrong: it becomes a
-page the owner has to remember to visit, disconnected from the thing it's about. So
-interest is surfaced exactly where a decision gets made:
+The designs give interest its own tab, so it has one. But a tab on its own would be a
+page the owner has to remember to visit, so the same information also surfaces where a
+decision actually gets made:
 
-- **Home** — what needs a reply or a decision, right now.
+- **Interest** — who has been looking, at what, and which interest hasn't become a sale.
+- **Home** — the week's numbers, "Customer interest", and "Getting attention".
 - **Product** — how many people looked, asked, added, ordered, *plus a plain-language
   read of what that means* ("15 people looked and none ordered. Usually that is the
   price, the photo, or a missing size.").
 - **Customer** — one timeline of everything that person looked at, asked and bought.
+
+### One shop per thing you sell.
+
+A business owns many shops, each with its own @tag, categories and products. That is the
+model the designs describe ("One shop per thing you sell. You can add more later.") and
+it matches how these businesses actually talk about themselves. The tag is the share
+mechanic: `/s/thriftbypemz` opens that shop and nothing else — carts, orders and view
+counts are all scoped to it.
 
 ### Anonymous browsing is stitched to the person retroactively.
 
@@ -106,11 +135,11 @@ the MVP would have added the most complexity for the least benefit to the core l
 "People interested", not "conversion analytics". "Products", not "inventory management".
 "Customers", not "CRM". Order states read *New → In progress → Completed → Cancelled*.
 
-### Five destinations, and that's all.
+### Four destinations, and that's all.
 
-**Home · Products · Orders · Customers · Shop.** A bottom tab bar on phones, a rail on
-desktop. Mobile-first throughout, because the owner is usually packing an order or
-answering a DM, not sitting at a desk.
+**Home · Shops · Interest · Profile**, exactly as drawn. The app is a single mobile
+column that stays phone-width on a large screen, because the designs are a phone app and
+the owner is usually packing an order or answering a DM, not sitting at a desk.
 
 ---
 
@@ -120,33 +149,32 @@ answering a DM, not sitting at a desk.
 
 | Route | What it's for |
 |---|---|
-| `/home` | What needs attention, the last 7 days, interest that hasn't converted, recent activity |
-| `/products`, `/products/new`, `/products/[id]` | The catalogue, plus per-product interest |
-| `/orders`, `/orders/[id]` | The order pipeline |
-| `/customers`, `/customers/[id]` | People, and everything they've done |
-| `/questions` | Every question, filtered by waiting/answered |
-| `/shop` | The shareable link, shop profile, contact handles, currency |
+| `/home` | The week's numbers, shops, customer interest, what's getting attention |
+| `/shops`, `/shops/new`, `/shops/[shopId]` | The shops, the creation wizard, each shop's catalogue |
+| `/shops/[shopId]/products/new`, `/products/[id]` | Adding a product, and per-product interest |
+| `/interest` | Who's been looking, most viewed, and interest that hasn't converted |
+| `/price-book` | The private price list, searchable, per shop |
+| `/profile`, `/profile/edit` | Stats, contact channels, shop tags, account |
+| `/orders`, `/customers`, `/questions` | Off-nav, reached from Home and Profile → Account |
 
 **Customer**
 
 | Route | What it's for |
 |---|---|
-| `/s/[slug]` | The shop: header, categories, search, product grid |
-| `/s/[slug]/p/[id]` | A product: photos, price, availability, choices, ask, add to order |
-| `/s/[slug]/cart` | Review the order and check out |
-| `/s/[slug]/order/[id]` | Order status, kept as a link the customer can return to |
+| `/s/[handle]` | A shop, opened by its @tag: header, categories, search, product grid |
+| `/s/[handle]/p/[id]` | A product: photos, price, availability, choices, ask, add to order |
+| `/s/[handle]/cart` | Review the order and check out |
+| `/s/[handle]/order/[id]` | Order status, kept as a link the customer can return to |
 
 ---
 
 ## Visual direction
 
-Editorial and commerce-first: warm paper ground, ink-black actions, hairline rules
-instead of drop shadows, a tight type scale, and large product imagery given room to
-breathe. Signal colour is used sparingly and only when it means something — ember for
-*needs you*, green for *money in*, amber for *waiting*.
-
-Deliberately avoided, per the product brief: gradients, glassmorphism, SaaS blue/purple,
-floating-card soup, decorative charts and vanity metrics.
+Taken from the Figma file, not invented. `#007aff` primary on fully-rounded pills, white
+cards (radius 10 / 15 / 22) with two documented elevations on a light grey ground, a
+black bottom bar with a blue active tab, and the blue tag banner with its yellow
+highlight. DM Sans carries the interface; Montserrat sets stat numerals. Status colour is
+used only where state has to read at a glance.
 
 ---
 
@@ -163,6 +191,8 @@ floating-card soup, decorative charts and vanity metrics.
   with `Intl.NumberFormat` using the business's own currency.
 - **`src/proxy.ts`** mints the anonymous visitor cookie, because a Server Component
   cannot set a cookie during a render.
+- **Shop tags** are unique across every business, lowercased and stripped to
+  `[a-z0-9]`, because they appear in URLs and on social profiles.
 - Product views are de-duplicated per visitor per 6 hours, so a refresh doesn't inflate
   the number an owner is trying to make a decision from.
 - Seed imagery is generated by a small hand-written PNG encoder (`scripts/png.ts`), so
@@ -171,5 +201,10 @@ floating-card soup, decorative charts and vanity metrics.
 ### Not in this MVP, on purpose
 
 Payments, delivery/logistics, discount codes, multiple staff accounts, a variant matrix
-(products take a flat list of choices instead), and analytics beyond what answers
+(products take a flat list of choices instead), social sign-in (the designs show Google
+and Apple buttons; email and password is what's wired), and analytics beyond what answers
 *"what should I do next?"*.
+
+The database is created from `src/lib/schema.ts` on first connection and there are no
+migrations yet — while the schema is still moving, `npm run db:reset` is the upgrade
+path.

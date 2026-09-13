@@ -10,8 +10,8 @@ export default async function LandingPage() {
   if (await getSessionUser()) redirect("/home");
 
   // If a shop exists, offer it as something real to look at.
-  const [example] = all<{ slug: string; name: string }>(
-    `SELECT slug, name FROM businesses ORDER BY created_at LIMIT 1`,
+  const [example] = all<{ tag: string; name: string }>(
+    `SELECT tag, name FROM shops ORDER BY created_at LIMIT 1`,
   );
 
   return (
@@ -46,11 +46,11 @@ export default async function LandingPage() {
         </ol>
 
         <div className="mt-10 flex flex-wrap gap-3">
-          <ButtonLink href="/sign-up" size="lg">
-            Set up your kiosk
+          <ButtonLink href="/welcome" size="lg">
+            Get started
           </ButtonLink>
           {example && (
-            <ButtonLink href={`/s/${example.slug}`} tone="secondary" size="lg">
+            <ButtonLink href={`/s/${example.tag}`} tone="soft" size="lg">
               Look at an example shop
             </ButtonLink>
           )}

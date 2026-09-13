@@ -11,6 +11,27 @@ export type InterestKind =
   | "checkout_started"
   | "ordered";
 
+export type Shop = {
+  id: string;
+  business_id: string;
+  name: string;
+  /** The @tag a customer can use to open this shop. */
+  tag: string;
+  slug: string;
+  about: string | null;
+  cover_image_id: string | null;
+  position: number;
+  created_at: string;
+};
+
+/** A shop plus the counts the shop cards show. */
+export type ShopCard = Shop & {
+  product_count: number;
+  category_count: number;
+  cover_ids: string[];
+  views: number;
+};
+
 export type Business = {
   id: string;
   name: string;
@@ -23,12 +44,15 @@ export type Business = {
   location: string | null;
   currency: string;
   logo_image_id: string | null;
+  /** Account-level handle, shown under the welcome line on Home. */
+  handle: string;
   created_at: string;
 };
 
 export type Category = {
   id: string;
   business_id: string;
+  shop_id: string;
   name: string;
   position: number;
 };
@@ -36,6 +60,7 @@ export type Category = {
 export type Product = {
   id: string;
   business_id: string;
+  shop_id: string;
   category_id: string | null;
   name: string;
   description: string | null;
@@ -59,6 +84,8 @@ export type ProductOption = {
 export type ProductCard = Product & {
   image_id: string | null;
   category_name: string | null;
+  shop_name: string | null;
+  shop_tag: string | null;
   views: number;
   questions: number;
   orders: number;
@@ -89,6 +116,7 @@ export type Question = {
 export type Order = {
   id: string;
   business_id: string;
+  shop_id: string | null;
   customer_id: string;
   reference: string;
   status: OrderStatus;

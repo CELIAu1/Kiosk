@@ -7,7 +7,7 @@ import { formatMoney } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 import { whatsappLink } from "@/lib/url";
 import { PageBody, PageHeader } from "@/components/PageHeader";
-import { Badge, Button, Panel, SectionHeading } from "@/components/ui";
+import { Badge, Button, Card, SectionHeading } from "@/components/ui";
 import { WhatsAppIcon } from "@/components/icons";
 import type { OrderStatus } from "@/lib/types";
 
@@ -56,11 +56,11 @@ export default async function OrderPage({
           <Badge
             tone={
               order.status === "new"
-                ? "ember"
+                ? "brand"
                 : order.status === "completed"
-                  ? "grow"
+                  ? "good"
                   : order.status === "confirmed"
-                    ? "flag"
+                    ? "warn"
                     : "neutral"
             }
           >
@@ -73,7 +73,7 @@ export default async function OrderPage({
               <Button
                 type="submit"
                 size="sm"
-                tone={step.status === "cancelled" ? "danger" : "primary"}
+                tone={step.status === "cancelled" ? "danger" : "brand"}
               >
                 {step.label}
               </Button>
@@ -83,7 +83,7 @@ export default async function OrderPage({
 
         <section>
           <SectionHeading title="What they ordered" />
-          <Panel>
+          <Card>
             <ul className="divide-y divide-line">
               {items.map((item) => (
                 <li key={item.id} className="flex items-baseline gap-3 px-4 py-3">
@@ -117,9 +117,9 @@ export default async function OrderPage({
                 {formatMoney(order.total_minor, business.currency)}
               </span>
             </div>
-          </Panel>
+          </Card>
           {order.note && (
-            <p className="mt-3 border-l-2 border-line-strong pl-3 text-[13px] leading-relaxed text-ink-soft">
+            <p className="mt-3 border-l-2 border-line pl-3 text-[13px] leading-relaxed text-ink-soft">
               &ldquo;{order.note}&rdquo;
             </p>
           )}
@@ -127,7 +127,7 @@ export default async function OrderPage({
 
         <section>
           <SectionHeading title="Customer" />
-          <Panel className="p-4">
+          <Card className="p-4">
             <Link
               href={`/customers/${order.customer_id}`}
               className="text-[15px] font-medium hover:underline hover:underline-offset-4"
@@ -143,13 +143,13 @@ export default async function OrderPage({
                 href={message}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-3 inline-flex h-9 items-center gap-2 rounded-sm bg-ink px-3 text-[13px] font-medium text-paper hover:bg-ink-soft"
+                className="mt-3 inline-flex h-9 items-center gap-2 rounded-full bg-ink px-3 text-[13px] font-medium text-white hover:bg-ink-soft"
               >
                 <WhatsAppIcon className="h-4 w-4" />
                 Message on WhatsApp
               </a>
             )}
-          </Panel>
+          </Card>
         </section>
       </PageBody>
     </>

@@ -27,6 +27,9 @@ async function readForm(
   formData: FormData,
   keepImageIds: string[],
 ): Promise<ProductInput | { error: string }> {
+  const shopId = String(formData.get("shop_id") ?? "");
+  if (!shopId) return { error: "Pick which shop this belongs to." };
+
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Give the product a name." };
 
@@ -58,11 +61,12 @@ async function readForm(
   }
 
   return {
+    shopId,
     name,
     description: String(formData.get("description") ?? "").trim() || null,
     priceMinor,
     compareAtMinor,
-    categoryId: resolveCategory(businessId, String(formData.get("category") ?? "")),
+    categoryId: resolveCategory(businessId, shopId, String(formData.get("category") ?? "")),
     status,
     stock,
     options,
@@ -138,26 +142,32 @@ export async function deleteProductAction(formData: FormData) {
  * Categories are typed, not managed. A small business shouldn't have to visit
  * a settings screen to say "this one is a sneaker".
  */
-function resolveCategory(businessId: string, raw: string): string | null {
+function resolveCategory(
+  businessId: string,
+  shopId: string,
+  raw: string,
+): string | null {
   const name = raw.trim();
   if (!name) return null;
 
   const existing = one<{ id: string }>(
-    `SELECT id FROM categories WHERE business_id = ? AND name = ? COLLATE NOCASE`,
-    businessId,
+    `SELECT id FROM categories WHERE shop_id = ? AND name = ? COLLATE NOCASE`,
+    shopId,
     name,
   );
   if (existing) return existing.id;
 
   const id = newId("cat");
   const next = one<{ n: number }>(
-    `SELECT COALESCE(MAX(position), 0) + 1 AS n FROM categories WHERE business_id = ?`,
-    businessId,
+    `SELECT COALESCE(MAX(position), 0) + 1 AS n FROM categories WHERE shop_id = ?`,
+    shopId,
   );
   run(
-    `INSERT INTO categories (id, business_id, name, position) VALUES (?, ?, ?, ?)`,
+    `INSERT INTO categories (id, business_id, shop_id, name, position)
+     VALUES (?, ?, ?, ?, ?)`,
     id,
     businessId,
+    shopId,
     name,
     next?.n ?? 0,
   );

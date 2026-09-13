@@ -2,102 +2,48 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BagIcon, HomeIcon, PeopleIcon, StoreIcon, TagIcon } from "./icons";
+import { HomeIcon, PeopleIcon, SparkleIcon, StoreIcon } from "./icons";
 import { cx } from "./ui";
 
 /**
- * Five destinations, no more. "Interest" is deliberately not one of them:
- * interest is information about products and people, so it lives on those
- * screens rather than becoming a page the owner has to remember to visit.
+ * The four destinations from the Figma bottom bar: Home, Shops, Interest,
+ * Profile. Black bar, white inactive labels, blue active — 232:1719.
+ *
+ * Orders and Customers deliberately sit off this bar and are reached from
+ * Home and from Profile -> Account.
  */
 const ITEMS = [
   { href: "/home", label: "Home", Icon: HomeIcon },
-  { href: "/products", label: "Products", Icon: TagIcon },
-  { href: "/orders", label: "Orders", Icon: BagIcon },
-  { href: "/customers", label: "Customers", Icon: PeopleIcon },
-  { href: "/shop", label: "Shop", Icon: StoreIcon },
+  { href: "/shops", label: "Shops", Icon: StoreIcon },
+  { href: "/interest", label: "Interest", Icon: SparkleIcon },
+  { href: "/profile", label: "Profile", Icon: PeopleIcon },
 ];
 
-function useActive(href: string) {
+export function OwnerTabs() {
   const pathname = usePathname();
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
-function NavLink({
-  href,
-  label,
-  Icon,
-  badge,
-  variant,
-}: {
-  href: string;
-  label: string;
-  Icon: (props: { className?: string }) => React.ReactElement;
-  badge?: number;
-  variant: "rail" | "tab";
-}) {
-  const active = useActive(href);
-
-  if (variant === "tab") {
-    return (
-      <Link
-        href={href}
-        aria-current={active ? "page" : undefined}
-        className={cx(
-          "relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium",
-          active ? "text-ink" : "text-ink-muted",
-        )}
-      >
-        <span className="relative">
-          <Icon className={cx("h-5 w-5", active && "stroke-[2]")} />
-          {!!badge && badge > 0 && (
-            <span className="absolute -top-1 -right-1.5 h-1.5 w-1.5 rounded-full bg-ember" />
-          )}
-        </span>
-        {label}
-      </Link>
-    );
-  }
-
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={cx(
-        "flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-[14px]",
-        active ? "bg-sunk font-medium text-ink" : "text-ink-soft hover:text-ink",
-      )}
-    >
-      <Icon className="h-[18px] w-[18px]" />
-      <span className="flex-1">{label}</span>
-      {!!badge && badge > 0 && (
-        <span className="tabular rounded-xs bg-ember px-1.5 text-[11px] font-medium text-paper">
-          {badge}
-        </span>
-      )}
-    </Link>
-  );
-}
-
-export function OwnerTabs({ badges }: { badges: Record<string, number> }) {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-[480px] items-center justify-between bg-black px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      {ITEMS.map((item) => (
-        <NavLink key={item.href} {...item} variant="tab" badge={badges[item.href]} />
-      ))}
-    </nav>
-  );
-}
-
-export function OwnerRail({ badges }: { badges: Record<string, number> }) {
-  return (
-    <nav aria-label="Main" className="space-y-0.5">
-      {ITEMS.map((item) => (
-        <NavLink key={item.href} {...item} variant="rail" badge={badges[item.href]} />
-      ))}
+      {ITEMS.map(({ href, label, Icon }) => {
+        const active = pathname === href || pathname.startsWith(`${href}/`);
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={cx(
+              "flex flex-col items-center justify-center gap-0.5 px-2",
+              active ? "text-brand-nav" : "text-white",
+            )}
+          >
+            <Icon className="h-6 w-6" />
+            <span className="text-[12px] font-medium">{label}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

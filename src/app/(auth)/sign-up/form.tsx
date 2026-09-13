@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { signUpAction, type FormState } from "@/lib/actions/auth";
-import { Button, Field, Input } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 
 export function SignUpForm() {
   const [state, action, pending] = useActionState<FormState, FormData>(
@@ -11,29 +11,49 @@ export function SignUpForm() {
   );
 
   return (
-    <form action={action} className="space-y-4">
-      <Field label="Business name" hint="This is the name customers will see.">
-        <Input name="business_name" required placeholder="Ada's Sneaker Corner" />
-      </Field>
-      <Field label="Your name" optional>
-        <Input name="owner_name" placeholder="Ada Okafor" />
-      </Field>
-      <Field label="WhatsApp number" optional hint="So customers can reach you directly.">
-        <Input name="whatsapp" inputMode="tel" placeholder="+234 801 234 5678" />
-      </Field>
-      <Field label="Email">
-        <Input name="email" type="email" autoComplete="email" required />
-      </Field>
-      <Field label="Password" hint="At least 8 characters.">
-        <Input name="password" type="password" autoComplete="new-password" required />
-      </Field>
+    <form action={action} className="space-y-3">
+      <Input
+        name="business_name"
+        required
+        placeholder="Business name"
+        aria-label="Business name"
+      />
+      <Input name="owner_name" placeholder="Your name" aria-label="Your name" />
+      <Input
+        name="whatsapp"
+        inputMode="tel"
+        placeholder="WhatsApp number"
+        aria-label="WhatsApp number"
+      />
+      <Input
+        name="email"
+        type="email"
+        autoComplete="email"
+        required
+        placeholder="Enter email address"
+        aria-label="Email"
+      />
+      <Input
+        name="password"
+        type="password"
+        autoComplete="new-password"
+        required
+        placeholder="Password (8+ characters)"
+        aria-label="Password"
+      />
       {state?.error && (
-        <p role="alert" className="text-[13px] text-ember">
+        <p role="alert" className="text-[13px] text-bad">
           {state.error}
         </p>
       )}
-      <Button type="submit" size="lg" className="w-full" disabled={pending}>
-        {pending ? "Setting up…" : "Create my kiosk"}
+      <Button
+        type="submit"
+        tone="dark"
+        size="lg"
+        className="w-full rounded-[10px]"
+        disabled={pending}
+      >
+        {pending ? "Creating…" : "Create account"}
       </Button>
     </form>
   );

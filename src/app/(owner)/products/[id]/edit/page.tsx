@@ -34,13 +34,16 @@ export default async function EditProductPage({
     <>
       <PageHeader
         title="Edit product"
-        back={{ href: `/products/${product.id}`, label: product.name }}
+        back={{ href: `/products/${product.id}` }}
       />
       <PageBody>
         <div className="max-w-xl space-y-10">
           <ProductForm
             currency={session.business.currency}
-            categories={listCategories(session.business.id).map((c) => c.name)}
+            shopId={product.shop_id}
+            categories={listCategories(session.business.id, product.shop_id).map(
+              (c) => c.name,
+            )}
             existing={{
               product,
               categoryName,

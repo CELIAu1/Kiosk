@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { signInAction, type FormState } from "@/lib/actions/auth";
-import { Button, Field, Input } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 
 export function SignInForm() {
   const [state, action, pending] = useActionState<FormState, FormData>(
@@ -11,25 +11,36 @@ export function SignInForm() {
   );
 
   return (
-    <form action={action} className="space-y-4">
-      <Field label="Email">
-        <Input name="email" type="email" autoComplete="email" required />
-      </Field>
-      <Field label="Password">
-        <Input
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-        />
-      </Field>
+    <form action={action} className="space-y-3">
+      <Input
+        name="email"
+        type="email"
+        autoComplete="email"
+        required
+        placeholder="Enter email address"
+        aria-label="Email"
+      />
+      <Input
+        name="password"
+        type="password"
+        autoComplete="current-password"
+        required
+        placeholder="Password"
+        aria-label="Password"
+      />
       {state?.error && (
-        <p role="alert" className="text-[13px] text-ember">
+        <p role="alert" className="text-[13px] text-bad">
           {state.error}
         </p>
       )}
-      <Button type="submit" size="lg" className="w-full" disabled={pending}>
-        {pending ? "Signing in…" : "Sign in"}
+      <Button
+        type="submit"
+        tone="dark"
+        size="lg"
+        className="w-full rounded-[10px]"
+        disabled={pending}
+      >
+        {pending ? "Signing in…" : "Login"}
       </Button>
     </form>
   );

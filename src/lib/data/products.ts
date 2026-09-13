@@ -11,6 +11,8 @@ const CARD_SELECT = `
          (SELECT pi.image_id FROM product_images pi
            WHERE pi.product_id = p.id ORDER BY pi.position LIMIT 1) AS image_id,
          (SELECT c.name FROM categories c WHERE c.id = p.category_id) AS category_name,
+         (SELECT sh.name FROM shops sh WHERE sh.id = p.shop_id) AS shop_name,
+         (SELECT sh.tag FROM shops sh WHERE sh.id = p.shop_id) AS shop_tag,
          (SELECT COUNT(*) FROM interest_events e
            WHERE e.product_id = p.id AND e.kind = 'viewed_product') AS views,
          (SELECT COUNT(*) FROM questions q WHERE q.product_id = p.id) AS questions,
@@ -22,11 +24,20 @@ const CARD_SELECT = `
 
 export function listProducts(
   businessId: string,
-  opts: { search?: string; categoryId?: string; publicOnly?: boolean } = {},
+  opts: {
+    search?: string;
+    categoryId?: string;
+    shopId?: string;
+    publicOnly?: boolean;
+  } = {},
 ): ProductCard[] {
   const where = [`p.business_id = ?`];
   const params: (string | number)[] = [businessId];
 
+  if (opts.shopId) {
+    where.push(`p.shop_id = ?`);
+    params.push(opts.shopId);
+  }
   if (opts.publicOnly) where.push(`p.status IN ('active', 'sold_out')`);
   if (opts.categoryId) {
     where.push(`p.category_id = ?`);
@@ -79,6 +90,7 @@ export function getOption(optionId: string) {
 }
 
 export type ProductInput = {
+  shopId: string;
   name: string;
   description: string | null;
   priceMinor: number;
@@ -96,11 +108,12 @@ export function createProduct(businessId: string, input: ProductInput): string {
   tx(() => {
     run(
       `INSERT INTO products
-         (id, business_id, category_id, name, description, price_minor,
+         (id, business_id, shop_id, category_id, name, description, price_minor,
           compare_at_minor, status, stock, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       id,
       businessId,
+      input.shopId,
       input.categoryId,
       input.name,
       input.description,
@@ -126,9 +139,10 @@ export function updateProduct(
   tx(() => {
     run(
       `UPDATE products
-          SET category_id = ?, name = ?, description = ?, price_minor = ?,
+          SET shop_id = ?, category_id = ?, name = ?, description = ?, price_minor = ?,
               compare_at_minor = ?, status = ?, stock = ?, updated_at = ?
         WHERE id = ? AND business_id = ?`,
+      input.shopId,
       input.categoryId,
       input.name,
       input.description,

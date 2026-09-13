@@ -10,12 +10,12 @@ import { ChatIcon } from "@/components/icons";
  * the business sees it attached to the product, with a way to reply.
  */
 export function AskForm({
-  slug,
+  handle,
   productId,
   businessName,
   asked,
 }: {
-  slug: string;
+  handle: string;
   productId: string | null;
   businessName: string;
   asked?: boolean;
@@ -28,7 +28,7 @@ export function AskForm({
 
   if (asked && !open) {
     return (
-      <div className="border border-line bg-surface p-4">
+      <div className="rounded-card bg-sunk p-4">
         <p className="text-[14px] font-medium">Sent.</p>
         <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
           {businessName} has your question and your number. They&rsquo;ll get back to you.
@@ -46,7 +46,7 @@ export function AskForm({
 
   if (!open) {
     return (
-      <Button tone="secondary" onClick={() => setOpen(true)} className="w-full">
+      <Button tone="soft" onClick={() => setOpen(true)} className="w-full">
         <ChatIcon className="h-4 w-4" />
         Ask a question
       </Button>
@@ -54,8 +54,8 @@ export function AskForm({
   }
 
   return (
-    <form action={action} className="space-y-3 border border-line bg-surface p-4">
-      <input type="hidden" name="slug" value={slug} />
+    <form action={action} className="space-y-3 rounded-card bg-sunk p-4">
+      <input type="hidden" name="handle" value={handle} />
       {productId && <input type="hidden" name="product_id" value={productId} />}
 
       <Field label={`Ask ${businessName}`}>

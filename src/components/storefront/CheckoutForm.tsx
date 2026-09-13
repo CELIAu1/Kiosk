@@ -10,11 +10,11 @@ import { Button, Field, Input, Textarea } from "@/components/ui";
  * does between them and their customer — transfer, cash, or on delivery.
  */
 export function CheckoutForm({
-  slug,
+  handle,
   total,
   businessName,
 }: {
-  slug: string;
+  handle: string;
   total: string;
   businessName: string;
 }) {
@@ -25,7 +25,7 @@ export function CheckoutForm({
 
   return (
     <form action={action} className="space-y-4">
-      <input type="hidden" name="slug" value={slug} />
+      <input type="hidden" name="handle" value={handle} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Your name">

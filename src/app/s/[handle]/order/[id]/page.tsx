@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
-import { getBusinessBySlug } from "@/lib/data/business";
+import { getShopByHandle } from "@/lib/data/shops";
+import { getBusinessById } from "@/lib/data/business";
 import { getOrderById, listOrderItems, ORDER_STATUS_LABEL } from "@/lib/data/orders";
 import { formatMoney } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 import { whatsappLink } from "@/lib/url";
-import { Badge, ButtonLink, Panel } from "@/components/ui";
+import { Badge, ButtonLink, Card } from "@/components/ui";
 import { CheckIcon, WhatsAppIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -13,42 +14,44 @@ export const metadata = { title: "Your order", robots: { index: false } };
 export default async function OrderReceiptPage({
   params,
 }: {
-  params: Promise<{ slug: string; id: string }>;
+  params: Promise<{ handle: string; id: string }>;
 }) {
-  const { slug, id } = await params;
-  const business = getBusinessBySlug(slug);
+  const { handle, id } = await params;
+  const shop = getShopByHandle(handle);
+  if (!shop) notFound();
+  const business = getBusinessById(shop.business_id);
   if (!business) notFound();
 
   const order = getOrderById(id);
-  if (!order || order.business_id !== business.id) notFound();
+  if (!order || order.business_id !== shop.business_id) notFound();
 
   const items = listOrderItems(order.id);
   const whatsapp = whatsappLink(
     business.whatsapp,
-    `Hi ${business.name}, this is ${order.customer_name} about order ${order.reference}.`,
+    `Hi ${shop.name}, this is ${order.customer_name} about order ${order.reference}.`,
   );
 
   return (
     <div className="space-y-6 py-8">
       <div className="text-center">
-        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-grow-soft text-grow">
+        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-good-tint text-good">
           <CheckIcon className="h-5 w-5" />
         </span>
         <h1 className="mt-3 text-[22px] font-semibold tracking-tight">
-          Your order is with {business.name}
+          Your order is with {shop.name}
         </h1>
         <p className="mt-1.5 text-[14px] leading-relaxed text-ink-soft">
           They&rsquo;ll message you on the number you gave to confirm and arrange payment.
         </p>
       </div>
 
-      <Panel>
+      <Card>
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div>
             <p className="eyebrow">Order</p>
             <p className="tabular mt-0.5 text-[15px] font-semibold">{order.reference}</p>
           </div>
-          <Badge tone={order.status === "new" ? "flag" : "grow"}>
+          <Badge tone={order.status === "new" ? "warn" : "good"}>
             {order.status === "new" ? "Waiting to be confirmed" : ORDER_STATUS_LABEL[order.status]}
           </Badge>
         </div>
@@ -78,7 +81,7 @@ export default async function OrderReceiptPage({
             {formatMoney(order.total_minor, business.currency)}
           </span>
         </div>
-      </Panel>
+      </Card>
 
       <p className="text-center text-[12px] text-ink-muted">
         Placed {formatDateTime(order.created_at)}. Keep this link to check back.
@@ -90,13 +93,13 @@ export default async function OrderReceiptPage({
             href={whatsapp}
             target="_blank"
             rel="noreferrer"
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-sm bg-ink text-[14px] font-medium text-paper hover:bg-ink-soft"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand text-[14px] font-semibold text-white hover:bg-brand-nav"
           >
             <WhatsAppIcon className="h-4 w-4" />
-            Message {business.name}
+            Message {shop.name}
           </a>
         )}
-        <ButtonLink href={`/s/${slug}`} tone="secondary" className="w-full">
+        <ButtonLink href={`/s/${handle}`} tone="soft" className="w-full">
           Keep browsing
         </ButtonLink>
       </div>

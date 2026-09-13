@@ -5,13 +5,7 @@ import { saveShopAction, type ShopFormState } from "@/lib/actions/shop";
 import { Button, Field, Input, SectionHeading, Textarea } from "@/components/ui";
 import type { Business } from "@/lib/types";
 
-export function ShopForm({
-  business,
-  origin,
-}: {
-  business: Business;
-  origin: string;
-}) {
+export function ProfileForm({ business }: { business: Business }) {
   const [state, action, pending] = useActionState<ShopFormState, FormData>(
     saveShopAction,
     null,
@@ -20,32 +14,32 @@ export function ShopForm({
   return (
     <form action={action} className="space-y-10">
       <section className="space-y-4">
-        <SectionHeading title="Your shop" />
+        <SectionHeading title="Your business" />
         <div className="flex items-start gap-4">
           {business.logo_image_id ? (
             <img
               src={`/api/images/${business.logo_image_id}`}
               alt=""
-              className="h-16 w-16 shrink-0 border border-line object-cover"
+              className="h-16 w-16 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center bg-sunk text-[20px] font-medium text-ink-soft">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-tint text-[20px] font-bold text-brand">
               {business.name.charAt(0).toUpperCase()}
             </div>
           )}
           <div className="flex-1">
-            <Field label="Shop photo" optional>
+            <Field label="Profile photo" optional>
               <input
                 type="file"
                 name="logo"
                 accept="image/*"
-                className="block w-full text-[13px] text-ink-soft file:mr-3 file:rounded-sm file:border file:border-line-strong file:bg-surface file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-ink"
+                className="block w-full text-[13px] text-ink-soft file:mr-3 file:rounded-full file:border file:border-line file:bg-surface file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-ink"
               />
             </Field>
           </div>
         </div>
 
-        <Field label="Shop name">
+        <Field label="Business name">
           <Input name="name" required defaultValue={business.name} />
         </Field>
 
@@ -59,8 +53,8 @@ export function ShopForm({
         </Field>
 
         <Field
-          label="Your shop link"
-          hint={`${origin.replace(/^https?:\/\//, "")}/s/your-link`}
+          label="Your account tag"
+          hint="Shown under your name on Home. Each shop also gets its own tag."
         >
           <Input name="slug" required defaultValue={business.slug} />
         </Field>
@@ -69,7 +63,7 @@ export function ShopForm({
       <section className="space-y-4">
         <SectionHeading
           title="How customers reach you"
-          note="Shown on your shop so people can carry on the conversation where they already are."
+          note="Shown on your shops so people can carry on the conversation where they already are."
         />
         <Field label="WhatsApp number" optional>
           <Input
@@ -117,14 +111,14 @@ export function ShopForm({
       </section>
 
       {state?.error && (
-        <p role="alert" className="text-[13px] text-ember">
+        <p role="alert" className="text-[13px] text-bad">
           {state.error}
         </p>
       )}
-      {state?.ok && <p className="text-[13px] text-grow">Saved.</p>}
+      {state?.ok && <p className="text-[13px] text-good">Saved.</p>}
 
       <Button type="submit" size="lg" disabled={pending}>
-        {pending ? "Saving…" : "Save shop"}
+        {pending ? "Saving…" : "Save profile"}
       </Button>
     </form>
   );

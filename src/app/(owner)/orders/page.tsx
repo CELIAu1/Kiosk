@@ -45,10 +45,10 @@ export default async function OrdersPage({
               key={tab.key}
               href={tab.key === "all" ? "/orders" : `/orders?status=${tab.key}`}
               className={cx(
-                "shrink-0 rounded-sm border px-3 py-1.5 text-[13px] whitespace-nowrap",
+                "shrink-0 rounded-full border px-3 py-1.5 text-[13px] whitespace-nowrap",
                 active === tab.key
-                  ? "border-ink bg-ink text-paper"
-                  : "border-line-strong text-ink-soft hover:bg-sunk",
+                  ? "border-brand bg-brand text-white"
+                  : "border-line text-ink-soft hover:bg-sunk",
               )}
             >
               {tab.label}

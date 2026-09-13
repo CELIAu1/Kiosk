@@ -35,10 +35,10 @@ export default async function QuestionsPage({
               key={tab.key}
               href={`/questions?status=${tab.key}`}
               className={cx(
-                "rounded-sm border px-3 py-1.5 text-[13px]",
+                "rounded-full border px-3 py-1.5 text-[13px]",
                 active === tab.key
-                  ? "border-ink bg-ink text-paper"
-                  : "border-line-strong text-ink-soft hover:bg-sunk",
+                  ? "border-brand bg-brand text-white"
+                  : "border-line text-ink-soft hover:bg-sunk",
               )}
             >
               {tab.label}

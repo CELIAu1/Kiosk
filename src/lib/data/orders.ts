@@ -71,6 +71,7 @@ export function countOrders(businessId: string, status: OrderStatus): number {
 
 export function placeOrder(input: {
   businessId: string;
+  shopId: string;
   customerId: string;
   visitorId: string | null;
   lines: CartLine[];
@@ -86,10 +87,12 @@ export function placeOrder(input: {
   tx(() => {
     run(
       `INSERT INTO orders
-         (id, business_id, customer_id, reference, status, total_minor, note, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'new', ?, ?, ?, ?)`,
+         (id, business_id, shop_id, customer_id, reference, status, total_minor,
+          note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'new', ?, ?, ?, ?)`,
       id,
       input.businessId,
+      input.shopId,
       input.customerId,
       reference,
       total,
@@ -118,6 +121,7 @@ export function placeOrder(input: {
         line.product_id,
       );
       recordInterest(input.businessId, "ordered", {
+        shopId: input.shopId,
         productId: line.product_id,
         customerId: input.customerId,
         visitorId: input.visitorId,

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getBusinessBySlug } from "@/lib/data/business";
+import { getShopByHandle } from "@/lib/data/shops";
 import { getOption, getProduct, isOrderable } from "@/lib/data/products";
 import { addToCart, clearCart, listCart, setCartQty } from "@/lib/data/cart";
 import { findOrCreateCustomer, touchCustomer } from "@/lib/data/customers";
@@ -14,41 +14,46 @@ import { getVisitorId, linkVisitorToCustomer } from "@/lib/visitor";
 export type StorefrontState = { error?: string } | null;
 
 export async function addToCartAction(formData: FormData) {
-  const slug = String(formData.get("slug") ?? "");
-  const business = getBusinessBySlug(slug);
-  if (!business) return;
+  const handle = String(formData.get("handle") ?? "");
+  const shop = getShopByHandle(handle);
+  if (!shop) return;
 
   const productId = String(formData.get("product_id") ?? "");
-  const product = getProduct(business.id, productId);
-  if (!product || !isOrderable(product)) return;
+  const product = getProduct(shop.business_id, productId);
+  if (!product || product.shop_id !== shop.id || !isOrderable(product)) return;
 
-  const optionId = String(formData.get("option_id") ?? "") || null;
   // Guard against a stale form posting an option from another product.
+  const optionId = String(formData.get("option_id") ?? "") || null;
   const option = optionId ? getOption(optionId) : null;
   const safeOptionId = option?.product_id === productId ? option.id : null;
 
-  const visitorId = await getVisitorId(business.id);
+  const visitorId = await getVisitorId(shop.business_id);
   if (!visitorId) return;
 
   addToCart({
     visitorId,
-    businessId: business.id,
+    businessId: shop.business_id,
+    shopId: shop.id,
     productId,
     optionId: safeOptionId,
     qty: Number(formData.get("qty") ?? 1) || 1,
   });
-  recordInterest(business.id, "added_to_cart", { productId, visitorId });
+  recordInterest(shop.business_id, "added_to_cart", {
+    shopId: shop.id,
+    productId,
+    visitorId,
+  });
 
-  revalidatePath(`/s/${slug}`, "layout");
-  redirect(`/s/${slug}/cart`);
+  revalidatePath(`/s/${handle}`, "layout");
+  redirect(`/s/${handle}/cart`);
 }
 
 export async function setCartQtyAction(formData: FormData) {
-  const slug = String(formData.get("slug") ?? "");
-  const business = getBusinessBySlug(slug);
-  if (!business) return;
+  const handle = String(formData.get("handle") ?? "");
+  const shop = getShopByHandle(handle);
+  if (!shop) return;
 
-  const visitorId = await getVisitorId(business.id);
+  const visitorId = await getVisitorId(shop.business_id);
   if (!visitorId) return;
 
   setCartQty(
@@ -56,16 +61,16 @@ export async function setCartQtyAction(formData: FormData) {
     String(formData.get("line_id") ?? ""),
     Number(formData.get("qty") ?? 0),
   );
-  revalidatePath(`/s/${slug}`, "layout");
+  revalidatePath(`/s/${handle}`, "layout");
 }
 
 export async function askQuestionAction(
   _prev: StorefrontState,
   formData: FormData,
 ): Promise<StorefrontState> {
-  const slug = String(formData.get("slug") ?? "");
-  const business = getBusinessBySlug(slug);
-  if (!business) return { error: "This shop is no longer available." };
+  const handle = String(formData.get("handle") ?? "");
+  const shop = getShopByHandle(handle);
+  if (!shop) return { error: "This shop is no longer available." };
 
   const body = String(formData.get("body") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
@@ -76,45 +81,51 @@ export async function askQuestionAction(
   if (!phone) return { error: "Add a number so they can reply to you." };
 
   const productId = String(formData.get("product_id") ?? "") || null;
-  const visitorId = await getVisitorId(business.id);
+  const visitorId = await getVisitorId(shop.business_id);
 
-  const customer = findOrCreateCustomer(business.id, { name, phone });
+  const customer = findOrCreateCustomer(shop.business_id, { name, phone });
   if (visitorId) linkVisitorToCustomer(visitorId, customer.id);
 
   askQuestion({
-    businessId: business.id,
+    businessId: shop.business_id,
     productId,
     customerId: customer.id,
     visitorId,
     body,
   });
+  recordInterest(shop.business_id, "asked", {
+    shopId: shop.id,
+    productId,
+    customerId: customer.id,
+    visitorId,
+  });
 
-  revalidatePath(`/s/${slug}`, "layout");
-  redirect(`/s/${slug}${productId ? `/p/${productId}` : ""}?asked=1`);
+  revalidatePath(`/s/${handle}`, "layout");
+  redirect(`/s/${handle}${productId ? `/p/${productId}` : ""}?asked=1`);
 }
 
 export async function placeOrderAction(
   _prev: StorefrontState,
   formData: FormData,
 ): Promise<StorefrontState> {
-  const slug = String(formData.get("slug") ?? "");
-  const business = getBusinessBySlug(slug);
-  if (!business) return { error: "This shop is no longer available." };
+  const handle = String(formData.get("handle") ?? "");
+  const shop = getShopByHandle(handle);
+  if (!shop) return { error: "This shop is no longer available." };
 
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   if (!name) return { error: "Add your name." };
   if (!phone) return { error: "Add a phone number so they can confirm your order." };
 
-  const visitorId = await getVisitorId(business.id);
+  const visitorId = await getVisitorId(shop.business_id);
   if (!visitorId) return { error: "Your basket expired. Add your items again." };
 
-  const lines = listCart(visitorId, business.id);
+  const lines = listCart(visitorId, shop.id);
   if (lines.length === 0) return { error: "Your basket is empty." };
 
   // Re-check availability at the moment of ordering, not when the page rendered.
   const unavailable = lines.filter((line) => {
-    const product = getProduct(business.id, line.product_id);
+    const product = getProduct(shop.business_id, line.product_id);
     return !product || !isOrderable(product);
   });
   if (unavailable.length > 0) {
@@ -123,7 +134,7 @@ export async function placeOrderAction(
     };
   }
 
-  const customer = findOrCreateCustomer(business.id, {
+  const customer = findOrCreateCustomer(shop.business_id, {
     name,
     phone,
     instagram: String(formData.get("instagram") ?? "").trim() || null,
@@ -132,14 +143,15 @@ export async function placeOrderAction(
   touchCustomer(customer.id);
 
   const order = placeOrder({
-    businessId: business.id,
+    businessId: shop.business_id,
+    shopId: shop.id,
     customerId: customer.id,
     visitorId,
     lines,
     note: String(formData.get("note") ?? "").trim() || null,
   });
 
-  clearCart(visitorId, business.id);
-  revalidatePath(`/s/${slug}`, "layout");
-  redirect(`/s/${slug}/order/${order.id}`);
+  clearCart(visitorId, shop.id);
+  revalidatePath(`/s/${handle}`, "layout");
+  redirect(`/s/${handle}/order/${order.id}`);
 }

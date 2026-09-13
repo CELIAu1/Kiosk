@@ -9,24 +9,32 @@ export function getBusinessBySlug(slug: string) {
   return one<Business>(`SELECT * FROM businesses WHERE slug = ?`, slug);
 }
 
-export function listCategories(businessId: string) {
+export function listCategories(businessId: string, shopId?: string) {
+  if (shopId) {
+    return all<Category>(
+      `SELECT * FROM categories WHERE business_id = ? AND shop_id = ?
+        ORDER BY position, name`,
+      businessId,
+      shopId,
+    );
+  }
   return all<Category>(
     `SELECT * FROM categories WHERE business_id = ? ORDER BY position, name`,
     businessId,
   );
 }
 
-/** Categories that actually have something a customer can see right now. */
-export function listPublicCategories(businessId: string) {
+/** Categories in one shop that a customer can actually see right now. */
+export function listPublicCategories(shopId: string) {
   return all<Category & { product_count: number }>(
     `SELECT c.*, COUNT(p.id) AS product_count
        FROM categories c
        JOIN products p
          ON p.category_id = c.id AND p.status IN ('active', 'sold_out')
-      WHERE c.business_id = ?
+      WHERE c.shop_id = ?
       GROUP BY c.id
       ORDER BY c.position, c.name`,
-    businessId,
+    shopId,
   );
 }
 
@@ -45,6 +53,7 @@ export function updateBusiness(
       | "currency"
       | "logo_image_id"
       | "slug"
+      | "handle"
     >
   >,
 ) {

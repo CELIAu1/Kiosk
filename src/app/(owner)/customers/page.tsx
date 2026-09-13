@@ -64,7 +64,7 @@ export default async function CustomersPage({
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-ink-muted">
                     {customer.waiting_questions > 0 && (
-                      <Badge tone="ember">
+                      <Badge tone="brand">
                         {customer.waiting_questions} waiting
                       </Badge>
                     )}

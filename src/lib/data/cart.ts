@@ -13,21 +13,21 @@ const LINE_SELECT = `
     LEFT JOIN product_options po ON po.id = ci.option_id
 `;
 
-export function listCart(visitorId: string, businessId: string): CartLine[] {
+export function listCart(visitorId: string, shopId: string): CartLine[] {
   return all<CartLine>(
-    `${LINE_SELECT} WHERE ci.visitor_id = ? AND ci.business_id = ? ORDER BY ci.created_at`,
+    `${LINE_SELECT} WHERE ci.visitor_id = ? AND ci.shop_id = ? ORDER BY ci.created_at`,
     visitorId,
-    businessId,
+    shopId,
   );
 }
 
-export function cartCount(visitorId: string, businessId: string): number {
+export function cartCount(visitorId: string, shopId: string): number {
   return (
     one<{ n: number }>(
       `SELECT COALESCE(SUM(qty), 0) AS n FROM cart_items
-        WHERE visitor_id = ? AND business_id = ?`,
+        WHERE visitor_id = ? AND shop_id = ?`,
       visitorId,
-      businessId,
+      shopId,
     )?.n ?? 0
   );
 }
@@ -39,6 +39,7 @@ export function cartTotal(lines: CartLine[]): number {
 export function addToCart(input: {
   visitorId: string;
   businessId: string;
+  shopId: string;
   productId: string;
   optionId: string | null;
   qty?: number;
@@ -58,11 +59,12 @@ export function addToCart(input: {
   }
   run(
     `INSERT INTO cart_items
-       (id, visitor_id, business_id, product_id, option_id, qty, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (id, visitor_id, business_id, shop_id, product_id, option_id, qty, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     newId("cit"),
     input.visitorId,
     input.businessId,
+    input.shopId,
     input.productId,
     input.optionId,
     qty,
@@ -83,10 +85,10 @@ export function setCartQty(visitorId: string, lineId: string, qty: number) {
   );
 }
 
-export function clearCart(visitorId: string, businessId: string) {
+export function clearCart(visitorId: string, shopId: string) {
   run(
-    `DELETE FROM cart_items WHERE visitor_id = ? AND business_id = ?`,
+    `DELETE FROM cart_items WHERE visitor_id = ? AND shop_id = ?`,
     visitorId,
-    businessId,
+    shopId,
   );
 }

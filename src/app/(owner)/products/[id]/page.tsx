@@ -17,7 +17,7 @@ import {
   Badge,
   Button,
   ButtonLink,
-  Panel,
+  Card,
   SectionHeading,
   Stat,
 } from "@/components/ui";
@@ -57,9 +57,9 @@ export default async function ProductPage({
     <>
       <PageHeader
         title={product.name}
-        back={{ href: "/products", label: "Products" }}
+        back={{ href: `/shops/${product.shop_id}` }}
         action={
-          <ButtonLink href={`/products/${product.id}/edit`} tone="secondary" size="sm">
+          <ButtonLink href={`/products/${product.id}/edit`} tone="soft" size="sm">
             Edit
           </ButtonLink>
         }
@@ -102,10 +102,10 @@ export default async function ProductPage({
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {product.status === "hidden" && <Badge>Hidden from your shop</Badge>}
                 {(product.status === "sold_out" || outOfStock) && (
-                  <Badge tone="flag">Sold out</Badge>
+                  <Badge tone="warn">Sold out</Badge>
                 )}
                 {product.status === "active" && !outOfStock && (
-                  <Badge tone="grow">Live in your shop</Badge>
+                  <Badge tone="good">Live in your shop</Badge>
                 )}
                 {product.category_name && <Badge>{product.category_name}</Badge>}
                 {product.stock !== null && (
@@ -129,7 +129,7 @@ export default async function ProductPage({
                   {options.map((option) => (
                     <span
                       key={option.id}
-                      className="rounded-sm border border-line-strong px-2 py-1 text-[13px]"
+                      className="rounded-full border border-line px-2 py-1 text-[13px]"
                     >
                       {option.label}
                     </span>
@@ -146,7 +146,7 @@ export default async function ProductPage({
                   name="status"
                   value={product.status === "hidden" ? "active" : "hidden"}
                 />
-                <Button type="submit" tone="secondary" size="sm">
+                <Button type="submit" tone="soft" size="sm">
                   {product.status === "hidden" ? "Show in shop" : "Hide from shop"}
                 </Button>
               </form>
@@ -157,14 +157,14 @@ export default async function ProductPage({
                   name="status"
                   value={product.status === "sold_out" ? "active" : "sold_out"}
                 />
-                <Button type="submit" tone="secondary" size="sm">
+                <Button type="submit" tone="soft" size="sm">
                   {product.status === "sold_out" ? "Back in stock" : "Mark sold out"}
                 </Button>
               </form>
               <Link
-                href={`/s/${business.slug}/p/${product.id}`}
+                href={`/s/${product.shop_tag}/p/${product.id}`}
                 target="_blank"
-                className="inline-flex h-8 items-center rounded-sm px-2.5 text-[13px] text-ink-soft hover:bg-sunk hover:text-ink"
+                className="inline-flex h-8 items-center rounded-full px-2.5 text-[13px] text-ink-soft hover:bg-sunk hover:text-ink"
               >
                 See how customers see it
               </Link>
@@ -175,7 +175,7 @@ export default async function ProductPage({
         {/* The interest story for this one product, in plain language. */}
         <section>
           <SectionHeading title="What's happening with this product" />
-          <Panel className="p-5">
+          <Card className="p-5">
             <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-4">
               <Stat value={funnel.views} label="people looked" />
               <Stat value={funnel.asked} label="asked a question" />
@@ -183,13 +183,12 @@ export default async function ProductPage({
               <Stat
                 value={funnel.ordered}
                 label="ordered"
-                tone={funnel.ordered > 0 ? "grow" : undefined}
               />
             </div>
             <p className="mt-5 border-t border-line pt-4 text-[13px] leading-relaxed text-ink-soft">
               {readInterest(funnel, outOfStock)}
             </p>
-          </Panel>
+          </Card>
         </section>
 
         <section>
