@@ -1,14 +1,13 @@
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/auth";
 import { getShop } from "@/lib/data/shops";
-import { listCategories } from "@/lib/data/business";
 import { PageHeader } from "@/components/PageHeader";
-import { ProductForm } from "@/components/ProductForm";
+import { ShopSettingsForm } from "./form";
 
-export const metadata = { title: "Add a product" };
+export const metadata = { title: "Shop settings" };
 export const dynamic = "force-dynamic";
 
-export default async function NewProductPage({
+export default async function ShopSettingsPage({
   params,
 }: {
   params: Promise<{ shopId: string }>;
@@ -21,16 +20,12 @@ export default async function NewProductPage({
   return (
     <>
       <PageHeader
-        title="Add a product"
-        subtitle={`to ${shop.name}`}
+        title="Shop settings"
+        subtitle={shop.name}
         back={{ href: `/shops/${shop.id}` }}
       />
       <div className="pb-6">
-        <ProductForm
-          currency={session.business.currency}
-          shopId={shop.id}
-          categories={listCategories(session.business.id, shop.id).map((c) => c.name)}
-        />
+        <ShopSettingsForm shop={shop} />
       </div>
     </>
   );

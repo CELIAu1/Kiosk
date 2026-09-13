@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listOrders, ORDER_STATUS_LABEL } from "@/lib/data/orders";
 import { PageBody, PageHeader } from "@/components/PageHeader";
 import { OrderItemRow, RowList } from "@/components/rows";
@@ -22,7 +22,7 @@ export default async function OrdersPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const business = session.business;
   const { status } = await searchParams;
 

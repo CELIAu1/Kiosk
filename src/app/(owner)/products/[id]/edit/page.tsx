@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listCategories } from "@/lib/data/business";
 import {
   getProduct,
@@ -21,7 +21,7 @@ export default async function EditProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const product = getProduct(session.business.id, id);
   if (!product) notFound();
 

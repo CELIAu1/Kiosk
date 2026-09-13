@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { one, run } from "./db";
 import { newId } from "./ids";
 import { hashPassword, verifyPassword } from "./password";
@@ -72,6 +73,18 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (!business) return null;
 
   return { id: row.user_id, email: row.email, name: row.name, business };
+}
+
+/**
+ * The session, or a redirect to sign-in. Pages must use this rather than
+ * asserting the session is non-null: a page and its layout render in
+ * parallel, so the layout's guard cannot be relied on to run first — the
+ * page would throw on a signed-out request before the redirect happened.
+ */
+export async function requireSession(): Promise<SessionUser> {
+  const session = await getSessionUser();
+  if (!session) redirect("/sign-in");
+  return session;
 }
 
 export function findUserByEmail(email: string) {

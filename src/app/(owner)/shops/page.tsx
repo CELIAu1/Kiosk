@@ -1,4 +1,4 @@
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listShops } from "@/lib/data/shops";
 import { origin } from "@/lib/url";
 import { PageHeader } from "@/components/PageHeader";
@@ -11,7 +11,7 @@ export const metadata = { title: "My shops" };
 export const dynamic = "force-dynamic";
 
 export default async function ShopsPage() {
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const shops = listShops(session.business.id);
   const base = await origin();
 

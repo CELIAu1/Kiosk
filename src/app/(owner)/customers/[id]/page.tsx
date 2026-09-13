@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { customerActivity, getCustomer } from "@/lib/data/customers";
 import { listCustomerOrders } from "@/lib/data/orders";
 import { saveCustomerNoteAction } from "@/lib/actions/customers";
@@ -31,7 +31,7 @@ export default async function CustomerPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const business = session.business;
 
   const customer = getCustomer(business.id, id);
@@ -85,6 +85,7 @@ export default async function CustomerPage({
             <Textarea
               name="note"
               rows={2}
+              aria-label="Note to self"
               defaultValue={customer.note ?? ""}
               placeholder="Prefers pickup. Asked about size 43 restock."
             />

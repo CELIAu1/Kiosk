@@ -1,4 +1,4 @@
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listCustomers } from "@/lib/data/customers";
 import { formatMoney } from "@/lib/money";
 import { timeAgo } from "@/lib/time";
@@ -14,7 +14,7 @@ export default async function CustomersPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const business = session.business;
   const { q } = await searchParams;
   const customers = listCustomers(business.id, q);

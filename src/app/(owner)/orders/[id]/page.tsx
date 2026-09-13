@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { getOrder, listOrderItems, ORDER_STATUS_LABEL } from "@/lib/data/orders";
 import { setOrderStatusAction } from "@/lib/actions/orders";
 import { formatMoney } from "@/lib/money";
@@ -32,7 +32,7 @@ export default async function OrderPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const business = session.business;
 
   const order = getOrder(business.id, id);

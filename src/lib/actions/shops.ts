@@ -76,8 +76,3 @@ export async function deleteShopAction(formData: FormData) {
   revalidatePath("/shops");
   redirect("/shops");
 }
-
-/** Live preview of the tag as the owner types the shop name. */
-export async function previewTagAction(name: string): Promise<string> {
-  return normaliseTag(name);
-}

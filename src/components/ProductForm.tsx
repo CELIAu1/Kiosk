@@ -173,6 +173,7 @@ export function ProductForm({
             <Input
               name="stock"
               inputMode="numeric"
+              aria-label="How many left"
               className="mt-2"
               defaultValue={existing?.product.stock ?? 1}
               placeholder="1"

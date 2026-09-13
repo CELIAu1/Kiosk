@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { countShops } from "@/lib/data/shops";
 import { ArrowLeftIcon } from "@/components/icons";
 import { CreateShopForm } from "./form";
@@ -8,7 +8,7 @@ export const metadata = { title: "Create a shop" };
 export const dynamic = "force-dynamic";
 
 export default async function NewShopPage() {
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const existing = countShops(session.business.id);
 
   return (

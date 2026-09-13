@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, requireSession } from "@/lib/auth";
 import { getShop } from "@/lib/data/shops";
 import { listCategories } from "@/lib/data/business";
 import { listProducts } from "@/lib/data/products";
@@ -33,7 +33,7 @@ export default async function ShopCataloguePage({
 }) {
   const { shopId } = await params;
   const { c } = await searchParams;
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const business = session.business;
 
   const shop = getShop(business.id, shopId);
@@ -161,6 +161,15 @@ export default async function ShopCataloguePage({
           })}
         </ul>
       )}
+
+      <div className="pb-6 text-center">
+        <Link
+          href={`/shops/${shop.id}/settings`}
+          className="text-[13px] font-semibold text-brand-link hover:underline"
+        >
+          Shop settings
+        </Link>
+      </div>
     </>
   );
 }

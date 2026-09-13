@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listShops } from "@/lib/data/shops";
 import {
   getPulse,
@@ -34,7 +34,7 @@ export const dynamic = "force-dynamic";
  * not a wall of charts.
  */
 export default async function InterestPage() {
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const business = session.business;
 
   const pulse = getPulse(business.id, 7);

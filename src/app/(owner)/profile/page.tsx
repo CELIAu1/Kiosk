@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listShops } from "@/lib/data/shops";
 import { listProducts } from "@/lib/data/products";
 import { getPulse } from "@/lib/data/interest";
@@ -22,7 +22,7 @@ export const metadata = { title: "Profile" };
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const business = session.business;
 
   const shops = listShops(business.id);

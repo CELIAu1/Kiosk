@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listShops } from "@/lib/data/shops";
 import { listProducts } from "@/lib/data/products";
 import { countWaitingQuestions } from "@/lib/data/questions";
@@ -38,7 +38,7 @@ export const metadata = { title: "Home" };
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const business = session.business;
 
   const shops = listShops(business.id);

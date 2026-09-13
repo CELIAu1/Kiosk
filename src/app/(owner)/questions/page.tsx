@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listQuestions } from "@/lib/data/questions";
 import { PageBody, PageHeader } from "@/components/PageHeader";
 import { QuestionItem, RowList } from "@/components/rows";
@@ -13,7 +13,7 @@ export default async function QuestionsPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const { status } = await searchParams;
   const filter = status === "answered" ? "answered" : status === "all" ? undefined : "waiting";
   const questions = listQuestions(session.business.id, filter);

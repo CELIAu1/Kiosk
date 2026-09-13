@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSessionUser } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { listShops } from "@/lib/data/shops";
 import { listProducts } from "@/lib/data/products";
 import { formatMoney } from "@/lib/money";
@@ -21,7 +21,7 @@ export default async function PriceBookPage({
 }: {
   searchParams: Promise<{ q?: string; shop?: string }>;
 }) {
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const business = session.business;
   const { q, shop } = await searchParams;
 
@@ -126,7 +126,7 @@ export default async function PriceBookPage({
       {activeShop && (
         <div className="pt-5 pb-6 text-center">
           <Link
-            href={`/shops/${activeShop.id}`}
+            href={`/shops/${activeShop.id}/settings`}
             className="text-[13px] font-semibold text-brand-link hover:underline"
           >
             Manage {activeShop.name}

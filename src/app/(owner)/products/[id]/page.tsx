@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, requireSession } from "@/lib/auth";
 import {
   getProductCard,
   listProductImages,
@@ -41,7 +41,7 @@ export default async function ProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const session = (await getSessionUser())!;
+  const session = await requireSession();
   const business = session.business;
 
   const product = getProductCard(business.id, id);
