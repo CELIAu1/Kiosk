@@ -71,11 +71,41 @@ data in a hosted database, run `npm run db:seed` with the same two variables set
 
 ### 3. Set the environment variables
 
-`TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` on the host. See `.env.example`. Node 22.5+
-is required and declared in `engines`.
+Add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` on the host, for every environment you
+deploy (Production, Preview, Development). See `.env.example`. Node 22.5+ is required and
+declared in `engines`.
 
-Then deploy. There is no build step that touches the database, and nothing is written to
-disk at runtime.
+If `TURSO_DATABASE_URL` is missing in production the app fails immediately with a message
+saying so, rather than silently falling back to a local file it cannot write.
+
+### 4. Check the framework preset
+
+`vercel.json` pins `"framework": "nextjs"`, and settings there override the dashboard.
+
+This matters because a project created with the **Framework Preset set to "Other"** is
+treated as a static site, and a static site's default output directory is `public/`. The
+build then fails with:
+
+```
+No Output Directory named "public" found after the Build completed.
+```
+
+Next.js builds to `.next`, never to `public/`, so that error means the preset was wrong —
+not that anything is missing from the repository. If you still see it, open
+**Project Settings → Build & Deployment** and confirm:
+
+| Setting | Value |
+|---|---|
+| Framework Preset | **Next.js** |
+| Root Directory | `./` (repository root) |
+| Build Command | leave on the default (`next build`) |
+| Output Directory | leave on the default — **do not set it to `public`** |
+| Install Command | leave on the default |
+
+Clear any override that was set while the preset was "Other", then redeploy.
+
+There is no build step that touches the database, and nothing is written to disk at
+runtime.
 
 ---
 

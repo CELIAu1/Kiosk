@@ -22,8 +22,21 @@ const globalForDb = globalThis as unknown as {
 };
 
 function connect(): Client {
-  const url = process.env.TURSO_DATABASE_URL ?? "file:data/kiosk.db";
+  const configured = process.env.TURSO_DATABASE_URL;
+  const url = configured ?? "file:data/kiosk.db";
   const authToken = process.env.TURSO_AUTH_TOKEN;
+
+  // The local-file default is a development convenience. In production it
+  // would mean writing to a read-only, per-instance filesystem, so fail here
+  // with something that names the actual problem.
+  if (!configured && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "TURSO_DATABASE_URL is not set. Production cannot use the local SQLite " +
+        "file, because the filesystem is read-only and per-instance. Create a " +
+        "libSQL database and set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN. " +
+        "See the Deploying section of the README.",
+    );
+  }
 
   if (!url.startsWith("file:") && !authToken) {
     throw new Error(
