@@ -7,6 +7,7 @@ import {
   type ProductFormState,
 } from "@/lib/actions/products";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
+import { ImagePicker } from "@/components/ImagePicker";
 import { moneyInputValue } from "@/lib/money";
 import type { Product } from "@/lib/types";
 
@@ -46,15 +47,12 @@ export function ProductForm({
       )}
 
       <section className="space-y-4">
-        <Field label="Photos" hint="The first one is what customers see in your shop.">
-          <input
-            type="file"
-            name="images"
-            accept="image/*"
-            multiple
-            className="block w-full text-[13px] text-ink-soft file:mr-3 file:rounded-full file:border file:border-line file:bg-surface file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-ink"
-          />
-        </Field>
+        <ImagePicker
+          name="images"
+          multiple
+          label="Photos"
+          hint="The first one is what customers see in your shop."
+        />
 
         {existing && existing.imageIds.length > 0 && (
           <div className="flex flex-wrap gap-3">

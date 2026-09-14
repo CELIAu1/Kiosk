@@ -4,6 +4,7 @@ import { origin } from "@/lib/url";
 import { PageHeader } from "@/components/PageHeader";
 import { ShopCollage } from "@/components/ShopCardTile";
 import { ShareShop } from "@/components/ShareShop";
+import { ShopTag } from "@/components/ShopTag";
 import { ButtonLink, Card, EmptyState, IconLink } from "@/components/ui";
 import { EyeIcon, PlusIcon } from "@/components/icons";
 
@@ -40,10 +41,18 @@ export default async function ShopsPage() {
                 <ShopCollage shop={shop} />
                 <div className="p-4">
                   <p className="text-[14px] font-bold text-ink">{shop.name}</p>
-                  <p className="mt-1 text-[12px] text-ink-soft">
-                    @{shop.tag} · {shop.category_count}{" "}
-                    {shop.category_count === 1 ? "category" : "categories"} ·{" "}
-                    {shop.product_count} {shop.product_count === 1 ? "item" : "items"}
+                  <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[12px] text-ink-soft">
+                    <ShopTag
+                      tag={shop.tag}
+                      copyValue={`${base}/s/${shop.tag}`}
+                      size="sm"
+                    />
+                    <span>
+                      · {shop.category_count}{" "}
+                      {shop.category_count === 1 ? "category" : "categories"} ·{" "}
+                      {shop.product_count}{" "}
+                      {shop.product_count === 1 ? "item" : "items"}
+                    </span>
                   </p>
                 </div>
                 <div className="flex gap-3 border-t border-line-warm p-4 pt-3">

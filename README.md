@@ -204,6 +204,25 @@ the MVP would have added the most complexity for the least benefit to the core l
 "People interested", not "conversion analytics". "Products", not "inventory management".
 "Customers", not "CRM". Order states read *New → In progress → Completed → Cancelled*.
 
+### Setting up a shop is a guided flow, with an AI shortcut.
+
+Creating a shop walks the four steps from the designs: name it, say what it sells, pick
+categories, then choose how to build it — **Create for me with AI**, or do it by hand.
+The AI path drafts starter products from that one sentence and shows them for editing;
+nothing is saved until the owner accepts, and drafts arrive hidden so they go live only
+once there are photos.
+
+It needs `ANTHROPIC_API_KEY`. Without one the flow still works — it falls back to plain
+starter rows built from what was typed, and says so on screen rather than pretending.
+
+### Photos are shrunk in the browser before they upload.
+
+Not an optimisation — it is what makes uploading work. A Server Action request body is
+capped at 1MB and a photo off a phone is several times that, so uploads failed with a
+500. Photos are now resized to 1600px and re-encoded before they leave the device: a
+3024×4032 JPEG becomes a 21KB WebP. That also keeps every image small in the database
+and on the storefront.
+
 ### Four destinations, and that's all.
 
 **Home · Shops · Interest · Profile**, exactly as drawn. The app is a single mobile
@@ -219,7 +238,9 @@ the owner is usually packing an order or answering a DM, not sitting at a desk.
 | Route | What it's for |
 |---|---|
 | `/home` | The week's numbers, shops, customer interest, what's getting attention |
-| `/shops`, `/shops/new`, `/shops/[shopId]` | The shops, the creation wizard, each shop's catalogue |
+| `/shops`, `/shops/[shopId]` | The shops, and each shop's catalogue |
+| `/shops/new`, `/shops/[shopId]/setup/*` | The four-step creation wizard, including the AI draft |
+| `/shops/[shopId]/settings` | Rename, re-tag or delete a shop |
 | `/shops/[shopId]/products/new`, `/products/[id]` | Adding a product, and per-product interest |
 | `/interest` | Who's been looking, most viewed, and interest that hasn't converted |
 | `/price-book` | The private price list, searchable, per shop |

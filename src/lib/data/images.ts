@@ -2,7 +2,7 @@ import { one, run } from "../db";
 import { newId } from "../ids";
 
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"]);
-const MAX_BYTES = 4 * 1024 * 1024;
+const MAX_BYTES = 2 * 1024 * 1024;
 
 export class ImageError extends Error {}
 
@@ -16,7 +16,9 @@ export async function saveImage(file: File): Promise<string> {
     throw new ImageError("That file type isn't supported. Use a JPG, PNG or WebP.");
   }
   if (file.size > MAX_BYTES) {
-    throw new ImageError("That image is larger than 4MB. Try a smaller one.");
+    throw new ImageError(
+      "That photo is too large even after shrinking. Try a smaller one.",
+    );
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
   const id = newId("img");

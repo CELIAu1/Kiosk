@@ -19,8 +19,14 @@ const ITEMS = [
   { href: "/profile", label: "Profile", Icon: PeopleIcon },
 ];
 
+/** Setup runs full-screen, so the tab bar steps aside for it. */
+function isFullScreen(pathname: string) {
+  return pathname === "/shops/new" || /^\/shops\/[^/]+\/setup(\/|$)/.test(pathname);
+}
+
 export function OwnerTabs() {
   const pathname = usePathname();
+  if (isFullScreen(pathname)) return null;
 
   return (
     <nav

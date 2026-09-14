@@ -9,6 +9,7 @@ import { origin } from "@/lib/url";
 import { PageHeader } from "@/components/PageHeader";
 import { ShareShop } from "@/components/ShareShop";
 import { Card, ButtonLink, SeeAll } from "@/components/ui";
+import { ShopTag } from "@/components/ShopTag";
 import {
   ChevronRightIcon,
   InstagramIcon,
@@ -111,9 +112,7 @@ export default async function ProfilePage() {
                     <TagIcon className="h-[18px] w-[18px]" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14px] font-semibold text-ink">
-                      @{shop.tag}
-                    </span>
+                    <ShopTag tag={shop.tag} copyValue={`${base}/s/${shop.tag}`} />
                     <span className="block truncate text-[12px] text-ink-soft">
                       {shop.name}
                     </span>

@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { saveShopAction, type ShopFormState } from "@/lib/actions/shop";
 import { Button, Field, Input, SectionHeading, Textarea } from "@/components/ui";
+import { ImagePicker } from "@/components/ImagePicker";
 import type { Business } from "@/lib/types";
 
 export function ProfileForm({ business }: { business: Business }) {
@@ -28,14 +29,7 @@ export function ProfileForm({ business }: { business: Business }) {
             </div>
           )}
           <div className="flex-1">
-            <Field label="Profile photo" optional>
-              <input
-                type="file"
-                name="logo"
-                accept="image/*"
-                className="block w-full text-[13px] text-ink-soft file:mr-3 file:rounded-full file:border file:border-line file:bg-surface file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-ink"
-              />
-            </Field>
+            <ImagePicker name="logo" label="Profile photo" />
           </div>
         </div>
 

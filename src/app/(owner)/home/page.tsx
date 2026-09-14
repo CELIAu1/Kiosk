@@ -10,7 +10,8 @@ import {
   recentInterestSummaries,
 } from "@/lib/data/interest";
 import { Thumb } from "@/components/Thumb";
-import { CopyTag } from "@/components/CopyTag";
+import { ShopTag } from "@/components/ShopTag";
+import { origin } from "@/lib/url";
 import { TagBanner } from "@/components/TagBanner";
 import { ShopCardTile } from "@/components/ShopCardTile";
 import {
@@ -49,6 +50,7 @@ export default async function HomePage() {
   const waiting = await countWaitingQuestions(business.id);
   const newOrders = await countOrders(business.id, "new");
 
+  const base = await origin();
   const firstName = (business.owner_name ?? business.name).split(" ")[0];
 
   return (
@@ -83,7 +85,15 @@ export default async function HomePage() {
 
         <div className="mt-4 opacity-90">
           <h1 className="text-[18px] font-bold text-black">Welcome {firstName}!</h1>
-          <CopyTag value={business.handle} className="mt-2.5" />
+          {shops.length > 0 ? (
+            <ShopTag
+              tag={shops[0].tag}
+              copyValue={`${base}/s/${shops[0].tag}`}
+              className="mt-2.5"
+            />
+          ) : (
+            <p className="mt-2.5 text-[14px] text-ink-soft">{business.handle}</p>
+          )}
         </div>
       </header>
 
