@@ -1,0 +1,83 @@
+import { all, one, run } from "../db";
+import type { Business, Category } from "../types";
+
+export async function getBusinessById(id: string) {
+  return one<Business>(`SELECT * FROM businesses WHERE id = ?`, id);
+}
+
+export async function getBusinessBySlug(slug: string) {
+  return one<Business>(`SELECT * FROM businesses WHERE slug = ?`, slug);
+}
+
+export async function listCategories(businessId: string, shopId?: string) {
+  if (shopId) {
+    return all<Category>(
+      `SELECT * FROM categories WHERE business_id = ? AND shop_id = ?
+        ORDER BY position, name`,
+      businessId,
+      shopId,
+    );
+  }
+  return all<Category>(
+    `SELECT * FROM categories WHERE business_id = ? ORDER BY position, name`,
+    businessId,
+  );
+}
+
+/** Categories in one shop that a customer can actually see right now. */
+export async function listPublicCategories(shopId: string) {
+  return all<Category & { product_count: number }>(
+    `SELECT c.*, COUNT(p.id) AS product_count
+       FROM categories c
+       JOIN products p
+         ON p.category_id = c.id AND p.status IN ('active', 'sold_out')
+      WHERE c.shop_id = ?
+      GROUP BY c.id
+      ORDER BY c.position, c.name`,
+    shopId,
+  );
+}
+
+export async function updateBusiness(
+  id: string,
+  fields: Partial<
+    Pick<
+      Business,
+      | "name"
+      | "tagline"
+      | "owner_name"
+      | "whatsapp"
+      | "instagram"
+      | "tiktok"
+      | "location"
+      | "currency"
+      | "logo_image_id"
+      | "slug"
+      | "handle"
+    >
+  >,
+) {
+  const keys = Object.keys(fields) as (keyof typeof fields)[];
+  if (keys.length === 0) return;
+  const setters = keys.map((key) => `${key} = ?`).join(", ");
+  const values = keys.map((key) => fields[key] ?? null);
+  await run(`UPDATE businesses SET ${setters} WHERE id = ?`, ...values, id);
+}
+
+/** Slugs live in customer-facing URLs, so keep them short and predictable. */
+export function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
+export async function isSlugTaken(slug: string, exceptBusinessId?: string): Promise<boolean> {
+  const row = await one<{ id: string }>(
+    `SELECT id FROM businesses WHERE slug = ?`,
+    slug,
+  );
+  return !!row && row.id !== exceptBusinessId;
+}

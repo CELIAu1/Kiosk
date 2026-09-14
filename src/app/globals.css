@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+/*
+  KIOSK design tokens — taken from the Figma file, not invented.
+  Source: IiBjPQVrRnqC0A4Hf5eeHr (Home screen 232:1527, Profile 232:2472,
+  My shops 232:2304, Price book 232:2789).
+*/
+@theme {
+  /* Blues. #007aff is the product's primary; the others are its specific
+     roles in the design and are deliberately kept distinct. */
+  --color-brand: #007aff;
+  --color-brand-link: #2075f1;
+  --color-brand-nav: #0076e5;
+  --color-brand-edge: #1575e2;
+  --color-brand-tint: #e0f2ff;
+  --color-brand-tint-soft: #e9f5ff;
+  --color-brand-disabled: #a8c8f5;
+
+  /* The yellow that highlights the shop tag inside the blue banner. */
+  --color-accent: #ffd217;
+
+  /* Surfaces */
+  --color-surface: #ffffff;
+  --color-sunk: #f6f6f6;
+
+  /* Ink */
+  --color-ink: #0f1216;
+  --color-ink-soft: #686c73;
+  --color-ink-muted: #787878;
+  --color-ink-faint: #979797;
+
+  /* Hairlines */
+  --color-line: #d9d9d9;
+  --color-line-soft: rgba(217, 217, 217, 0.5);
+  --color-line-warm: rgba(229, 228, 223, 0.6);
+
+  /* Status colours. The design only fixes blue, so these stay restrained
+     and are used solely where state has to read at a glance. */
+  --color-good: #1f7a4d;
+  --color-good-tint: #e7f4ed;
+  --color-warn: #9a6b00;
+  --color-warn-tint: #fdf3dc;
+  --color-bad: #c0341d;
+  --color-bad-tint: #fdecea;
+
+  /* The overlay pill on "Getting attention" tiles. */
+  --color-scrim: rgba(11, 13, 19, 0.7);
+
+  --font-sans: var(--font-dm-sans), ui-sans-serif, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+  --font-num: var(--font-montserrat), var(--font-dm-sans), ui-sans-serif,
+    sans-serif;
+
+  --radius-card: 10px;
+  --radius-panel: 15px;
+  --radius-tile: 22px;
+
+  /* The two card elevations used across the file. */
+  --shadow-card: 0 1px 2px rgba(18, 22, 31, 0.04), 0 8px 24px rgba(18, 22, 31, 0.05);
+  --shadow-soft: 0 1px 1px rgba(18, 22, 31, 0.04), 0 8px 12px rgba(18, 22, 31, 0.05);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  /* Stat numerals are Montserrat in the design. */
+  .num {
+    font-family: var(--font-num);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: var(--color-brand);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-ink-muted);
+  }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+  The onboarding entrance. Runs on mount, so remounting a slide replays it —
+  no state, and it respects a reduced-motion preference.
+*/
+@keyframes kiosk-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.kiosk-rise {
+  animation: kiosk-rise 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-rise {
+    animation: none;
+  }
+}
